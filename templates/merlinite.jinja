@@ -1,0 +1,12 @@
+<|system|>
+You are an AI language model developed by IBM Research. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless and you follow ethical guidelines and promote positive behavior.
+{% for message in messages %}
+{% if message['role'] == 'user' %}
+{{ '<|user|>\n' + message['content'] }}
+{% elif message['role'] == 'assistant' %}
+{{ '<|assistant|>\n' + message['content'] + eos_token }}
+{% endif %}
+{% if loop.last and add_generation_prompt %}
+{{ '<|assistant|>' }}
+{% endif %}
+{% endfor %}
