@@ -104,3 +104,8 @@ quick-sync:
     git add --update
     git commit -m "quick sync"
     git push
+
+# run_all:
+#     run_judge 
+#     run_judge
+    
