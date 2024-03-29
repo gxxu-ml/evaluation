@@ -105,7 +105,15 @@ quick-sync:
     git commit -m "quick sync"
     git push
 
-# run_all:
-#     run_judge 
-#     run_judge
+run_all workspace model bench_name endpoint="http://localhost:8000/v1":
+    #!/usr/bin/env bash
+
+    ./just start_local {{model}}
+    while (screen -r | wc -l) <= 1
+    do
+        sleep 10
+    done
+    echo "Done starting up server..." 
+    # run_judge 
+    # run_judge
     
