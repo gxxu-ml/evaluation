@@ -1,9 +1,4 @@
-TOKEN := ""
-OPENAI_API_KEY := ""
-
 projdir := justfile_directory()
-
-alias qc := quick-sync
 
 [private]
 default:
@@ -31,7 +26,7 @@ start_local model_name org="ibm":
     pip install -U setuptools
 
     if [ ! -d "FastChat" ]; then
-        git clone --quiet https://{{TOKEN}}@github.com/shivchander/FastChat.git
+        git clone --quiet https://github.com/shivchander/FastChat.git
     fi
     cd $REPO_ROOT/FastChat
     if [[ "{{org}}" == "ibm" ]]; then
@@ -47,7 +42,7 @@ start_local model_name org="ibm":
 
     for i in {0..4}
     do
-        CUDA_VISIBLE_DEVICES=$i screen -dmS w-$i -- python3 -m fastchat.serve.model_worker \
+        CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python3 -m fastchat.serve.model_worker \
             --model-path {{org}}/{{model_name}} \
             --model-name {{model_name}}-$i \
             --port 3100$i \
@@ -64,7 +59,6 @@ run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
 
     REPO_ROOT=$(pwd)
     WORKSPACE=$(realpath {{workspace}})
-    NAME="pr_bench"
 
     cd $WORKSPACE
     source venv/bin/activate
@@ -73,12 +67,13 @@ run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
 
     for i in {0..4}
     do
-        OPENAI_API_KEY="NO_API_KEY" screen -dmS e-$i -- python gen_api_answer.py \
+        OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$i -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
             --openai-api-base {{endpoint}} \
             --model "{{model}}-$i" \
             --num-choices 1
     done
+    cd $REPO_ROOT
 
 run_judge workspace model bench_name:
     #!/usr/bin/env bash
@@ -91,7 +86,7 @@ run_judge workspace model bench_name:
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    OPENAI_API_KEY={{OPENAI_API_KEY}} python gen_judgment.py \
+    OPENAI_API_KEY=${OPEN_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
         --parallel 40 \
@@ -105,15 +100,24 @@ quick-sync:
     git commit -m "quick sync"
     git push
 
-run_all workspace model bench_name endpoint="http://localhost:8000/v1":
+run_all workspace model bench_name:
     #!/usr/bin/env bash
-
+    echo "Running evaluation {{bench_name}} with model {{model}} in workspace {{workspace}}"
+    ./just prepare_bench {{workspace}}
+    ./just link_rc
+    echo "Done preparing workspace..Starting server..."
     ./just start_local {{model}}
-    while (screen -r | wc -l) <= 1
+    echo "Done starting up server...Running run_bench..."
+    ./just run_bench {{workspace}} {{model}} {{bench_name}}
+    ./just wait_for_run_bench
+    echo "Done with run_bench...running evaluation..."
+    ./just run_judge {{workspace}} {{model}} {{bench_name}}
+    echo "Done with evaluation!"
+
+wait_for_run_bench:
+    #!/usr/bin/env bash
+    while [ $(screen -ls | grep run-bench | wc -l) -ne 0 ]
     do
-        sleep 10
+        echo "Still running run_bench.."
+        sleep 30
     done
-    echo "Done starting up server..." 
-    # run_judge 
-    # run_judge
-    
