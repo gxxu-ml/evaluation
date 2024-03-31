@@ -1,0 +1,67 @@
+# Source: generator/templates/pytorch-job.yaml
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+    name: job-name 
+    namespace: granite
+spec:
+    pytorchReplicaSpecs:
+        Master:
+            replicas: 1
+            restartPolicy: Never
+            template:
+                metadata:
+                    annotations:
+                        k8s.v1.cni.cncf.io/networks: multi-nic-network
+                spec:
+                    containers:
+                        - name: pytorch
+                          image: docker.io/xuk92/deepspeed-dev:v0.13.1
+                          imagePullPolicy: IfNotPresent
+                          env:
+                              - name: CUDA_VISIBLE_DEVICES
+                                value: "0,1,2,3,4,5,6,7"
+                              - name: GH_TOKEN
+                                value: "gh-token"
+                              - name: OPEN_API_KEY
+                                value: "open-api-key"
+                          command:
+                              - sh
+                              - -c
+                              - |
+                                cd /root
+                                git clone gh-token@github.com/instruct-lab/evaluation.git
+                                cd evaluation/
+                                curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
+                                tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
+                                ./just run_all workspace model-name eval-name
+                                tail -f /dev/null
+                          resources:
+                              limits:
+                                  cpu: 72
+                                  nvidia.com/gpu: 8
+                                  memory: 1150Gi
+                                  nvidia.com/roce_gdr: 2
+                          securityContext:
+                              capabilities:
+                                  add:
+                                    - IPC_LOCK
+                          volumeMounts:
+                              - name: scratch1
+                                mountPath: /new_data
+                              - name: scratch2
+                                mountPath: /inter-ckpts
+                              - name: dshm
+                                mountPath: "/dev/shm"
+                    volumes:
+                        - name: scratch1
+                          persistentVolumeClaim:
+                              claimName: llm-alignment
+                        - name: scratch2
+                          persistentVolumeClaim:
+                              claimName: inter-ckpts
+                        - name: dshm
+                          emptyDir:
+                              medium: Memory
+                    imagePullSecrets:
+                        - name: all-icr-io
