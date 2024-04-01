@@ -8,6 +8,7 @@ Once you've logged into the cluster, run the following command using the manifes
 sed -e 's|job-name|<evaluation-job-name>|g' \                
 -e 's|gh-token|<GH-TOKEN>|g' \
 -e 's|open-api-key|<OPEN-API-KEY>|g' \
+-e 's|rc-model-path|<path-in-volume-mount-where-rc-model-is-mounted>|g' \
 -e 's|workspace|<WORKSPACE-NAME>|g' \
 -e 's|model-name|<MODEL-NAME>|g' \
 -e 's|eval-name|<one of pr_bench/mt_bench>|g' \
@@ -25,6 +26,7 @@ $ cd evaluation
 $ sed -e 's|job-name|test-evaluation|g' \                
 -e 's|gh-token|REDACTED|g' \
 -e 's|open-api-key|REDACTRED|g' \
+-e 's|rc-model-path|"/new_data/experiments/ap-m-10-pr0316-v4/sft_model/epoch_4_step_390720"|g' \
 -e 's|workspace|ws-test|g' \
 -e 's|model-name|merlinite-7b-rc|g' \
 -e 's|eval-name|pr_bench|g' \

@@ -34,7 +34,7 @@ spec:
                                 cd evaluation/
                                 curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
                                 tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
-                                ./just run_all workspace model-name eval-name
+                                ./just run_all rc-model-path workspace model-name eval-name
                                 tail -f /dev/null
                           resources:
                               limits:
