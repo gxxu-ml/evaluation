@@ -9,6 +9,8 @@ sed -e 's|job-name|<evaluation-job-name>|g' \
 -e 's|gh-token|<GH_TOKEN>|g' \
 -e 's|openai-api-key|<OPENAI_API_KEY>|g' \
 -e 's|wandb-api-key|<WANDB_API_KEY>|g' \
+-e 's|cloudant-url|<CLOUDANT_URL>|g' \
+-e 's|cloudant-apikey|<CLOUDANT_APIKEY>|g' \
 -e 's|rc-branch-name|<release-candidate-branch-of-the-taxonomy-repo>|g' \
 -e 's|rc-model-path|<path-in-volume-mount-where-rc-model-is-mounted>|g' \
 manifests/evaluation.yaml \
@@ -23,9 +25,11 @@ $ git clone https://<token>@github.com/instruct-lab/evalution.git
 $ cd evaluation
 
 $ sed -e 's|job-name|test-evaluation|g' \                
--e 's|gh-token|GH_TOKEN|g' \
--e 's|openai-api-key|OAI_KEY|g' \
--e 's|wandb-api-key|WANDB_KEY|g' \
+-e 's|gh-token|$GH_TOKEN|g' \
+-e 's|openai-api-key|$OAI_KEY|g' \
+-e 's|wandb-api-key|$WANDB_KEY|g' \
+-e 's|cloudant-url|$CLOUDANT_URL|g' \
+-e 's|cloudant-apikey|$CLOUDANT_APIKEY|g' \
 -e 's|rc-branch-name|test-release-031624|g' \
 -e 's|rc-model-path|"/new_data/experiments/ap-m-10-pr0316-v4/sft_model/epoch_4_step_390720"|g' \
 manifests/evaluation.yaml \
