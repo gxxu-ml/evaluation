@@ -2,6 +2,11 @@
 # codes assume the env variables CLOUDANT_URL and CLOUDANT_APIKEY are set properly
 from ibm_cloud_sdk_core import ApiException
 from ibmcloudant.cloudant_v1 import CloudantV1, Document
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 
 def get_client():
@@ -33,6 +38,7 @@ def get_documents(client, db_name, as_dict=False):
     else:
         return [row["doc"] for row in response["rows"]]
 
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def create_or_update_document(client, db_name, doc_id, data_dict):
     try:
         doc = get_document(client, db_name, doc_id)
