@@ -68,7 +68,7 @@ def make_pr_bench(taxonomy_dir, output_dir, keep_all, add_date, changed_qnas_to_
     pr_bench_dir = os.path.join(output_dir, "pr_bench")
     if add_date:
         pr_bench_dir = pr_bench_dir + "-" + datetime.now().strftime('%Y-%m%d')
-    question_fn = "question.jsonl" if suffix is None else "question-{suffix}.jsonl"
+    question_fn = "question.jsonl" if suffix is None else f"question-{suffix}.jsonl"
 
     os.makedirs(pr_bench_dir, exist_ok=True)
 

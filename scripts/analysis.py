@@ -35,7 +35,7 @@ def get_changed_qnas_to_pr(repo: object, stage_branch: str) -> list:
     for commit in diff.commits:
         commit_obj = repo.get_commit(commit.sha)
         commit_message = commit_obj.commit.message
-        pr_numbers = re.findall(r"#(\d+)$", commit_message)
+        pr_numbers = re.findall(r"#(\d+)", commit_message)
         for f in commit_obj.files:
             if f.filename.endswith("qna.yaml"):
                 changed_files[f.filename] = pr_numbers[0]
@@ -69,7 +69,7 @@ def gather_pr_bench(workspace_dir, data_dir, output_dir):
     df_q_old = pd.read_json(fn_q_old, lines=True)
     print(f"{len(df_q_old)=}")
 
-    fn_j = os.path.join(model_dir_pr_bench, "gpt-4_single.jsonl")
+    fn_j = os.path.join(model_dir_pr_bench, "model_judgement", "gpt-4_single.jsonl")
     df_j = pd.read_json(fn_j, lines=True)
     print(f"{len(df_j)=}")
 
@@ -104,7 +104,7 @@ def gather_mt_bench(data_dir, output_dir):
     df_q = pd.read_json(fn_q, lines=True)
     print(f"{len(df_q)=}")
 
-    fn_j = os.path.join(model_dir_mt_bench, "gpt-4_single.jsonl")
+    fn_j = os.path.join(model_dir_mt_bench, "model_judgement", "gpt-4_single.jsonl")
     df_j = pd.read_json(fn_j, lines=True)
     print(f"{len(df_j)=}")
 
@@ -138,7 +138,7 @@ def make_fig(df_g, ths=10):
 @click.option(
     "--project-dir",
     type=click.Path(),
-    default="/root/labrador-evaluation/ws",
+    default="/root/evaluation",
     show_default=True,
     help="The project directory"
 )
@@ -179,6 +179,7 @@ def main(project_dir, taxonomy_dir, eval_branch, output_dir):
     gather_mt_bench(data_dir_mt, output_dir)
 
     # log results as W&B artifacts
+    # TODO update team name once it's changed
     run = wandb.init(entity="instructlab-backend", project="ilab", job_type="evaluation")
 
     # TODO implement below when the upstream artifact is ready
