@@ -4,7 +4,7 @@ projdir := justfile_directory()
 default:
     just --list
 
-link_rc model_path="/new_data/experiments/ap-m-10-pr0316-v4/sft_model/epoch_4_step_390720":
+link_rc model_path:
     #!/usr/bin/env bash
     if [ ! -d {{projdir / "ibm"}} ]; then
         mkdir {{projdir / "ibm"}}
@@ -100,11 +100,11 @@ quick-sync:
     git commit -m "quick sync"
     git push
 
-run_all workspace model bench_name:
+run_all rc_model_path workspace model bench_name:
     #!/usr/bin/env bash
     echo "Running evaluation {{bench_name}} with model {{model}} in workspace {{workspace}}"
     ./just prepare_bench {{workspace}}
-    ./just link_rc
+    ./just link_rc {{rc_model_path}}
     echo "Done preparing workspace..Starting server..."
     ./just start_local {{model}}
     echo "Done starting up server...Running run_bench..."

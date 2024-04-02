@@ -36,19 +36,14 @@ source venv/bin/activate
 pip install -U setuptools
 
 echo "Cloning taxonomy repo..."
-# git clone --quiet https://llm-alignment/labrador-datagen.git
-# cd $WORKSPACE/labrador-datagen
-# git switch --detach a8dd8c952c17f449303638b83bee2c31c98c50fc
 git clone --quiet https://${GH_TOKEN}@github.com/instruct-lab/taxonomy.git
 cd $WORKSPACE/taxonomy
 git switch test-release-031624
 cd $WORKSPACE
 
 echo "Cloning FastChat repo..."
-# git clone --quiet https://{}github.com/lm-sys/FastChat.git
 git clone --quiet https://github.com/shivchander/FastChat.git 
 cd $WORKSPACE/FastChat
-# git switch --detach d04ce6453ae016d9e03626b679c07aa1388dcbee # should be updated as we go
 git switch ibm-pr # TODO
 pip install --quiet --use-pep517 .
 pip install --quiet pandas torch transformers accelerate openai==0.28.0 anthropic
@@ -62,7 +57,6 @@ sed -i "s/You will be given a reference answer and the assistant's answer. Begin
 
 echo "Making data..."
 cd $WORKSPACE/FastChat/fastchat/llm_judge
-# python make_pr_bench.py --taxonomy-dir $WORKSPACE/labrador-datagen/taxonomies --output-dir data
 python make_pr_bench.py --taxonomy-dir $WORKSPACE/taxonomy --output-dir data
 
 echo "FastChat preparation completed successfully."
