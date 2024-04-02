@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+os.environ["WANDB_BASE_URL"] = "https://wandb-instance.105mljrhdm0c.us-east.codeengine.appdomain.cloud/"
 import re
 import git
 import click
@@ -34,7 +35,7 @@ def get_changed_qnas_to_pr(repo: object, stage_branch: str) -> list:
     for commit in diff.commits:
         commit_obj = repo.get_commit(commit.sha)
         commit_message = commit_obj.commit.message
-        pr_numbers = re.findall(r"#(\d+)", commit_message)
+        pr_numbers = re.findall(r"#(\d+)$", commit_message)
         for f in commit_obj.files:
             if f.filename.endswith("qna.yaml"):
                 changed_files[f.filename] = pr_numbers[0]
@@ -179,13 +180,19 @@ def main(project_dir, taxonomy_dir, eval_branch, output_dir):
 
     # log results as W&B artifacts
     run = wandb.init(entity="instructlab-backend", project="ilab", job_type="evaluation")
-    artifact = wandb.Artifact(name="mt-bench", type="dataset")
+
+    # TODO implement below when the upstream artifact is ready
+    #run.use_artifact("bike-dataset:latest")
+
+    artifact = wandb.Artifact(name="eval/mt-bench", type="dataset")
     artifact.add_dir(local_path=os.path.join(data_dir_pr, "mt_bench"))
     run.log_artifact(artifact)
-    artifact = wandb.Artifact(name="pr-bench", type="dataset")
+
+    artifact = wandb.Artifact(name="eval/pr-bench", type="dataset")
     artifact.add_dir(local_path=os.path.join(data_dir_pr, "pr_bench"))
     run.log_artifact(artifact)
-    artifact = wandb.Artifact(name="analysis", type="dataset")
+
+    artifact = wandb.Artifact(name="eval/analysis", type="dataset")
     artifact.add_dir(local_path=output_dir)
     run.log_artifact(artifact)
 
