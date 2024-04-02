@@ -12,7 +12,7 @@ link_rc model_path:
     ln -s {{model_path}} {{projdir / "ibm" / "merlinite-7b-rc"}}
 
 prepare_bench *args:
-    ./scripts/prepare_fschat_bench.sh {{*args}}
+    ./scripts/prepare_fschat_bench.sh {{args}}
 
 start_local model_name org="ibm":
     #!/usr/bin/env bash
