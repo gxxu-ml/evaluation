@@ -186,7 +186,7 @@ def main(project_dir, taxonomy_dir, eval_branch, output_dir):
     #run.use_artifact("bike-dataset:latest")
 
     artifact = wandb.Artifact(name="eval-mt_bench", type="dataset")
-    artifact.add_dir(local_path=os.path.join(data_dir_pr, "mt_bench"))
+    artifact.add_dir(local_path=os.path.join(data_dir_mt, "mt_bench"))
     run.log_artifact(artifact)
 
     artifact = wandb.Artifact(name="eval-pr_bench", type="dataset")
