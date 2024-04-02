@@ -27,6 +27,10 @@ spec:
                                 value: "openai-api-key"
                               - name: WANDB_API_KEY
                                 value: "wandb-api-key"
+                              - name: CLOUDANT_URL
+                                value: "cloudant-url"
+                              - name: CLOUDANT_APIKEY
+                                value: "cloudant-apikey"
                           command:
                               - sh
                               - -c

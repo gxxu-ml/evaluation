@@ -11,6 +11,7 @@ from github import Github
 import wandb
 
 from make_pr_bench import make_pr_bench
+from utils import get_client, create_or_update_document
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -177,6 +178,13 @@ def main(project_dir, taxonomy_dir, eval_branch, output_dir):
 
     gather_pr_bench(workspace_dir_pr, data_dir_pr, output_dir)
     gather_mt_bench(data_dir_mt, output_dir)
+
+    # sync PR data to DB
+    client = get_client()
+    for yaml_path, pr_number in changed_qnas_to_pr.items():
+        create_or_update_document(
+            client, "yaml-metadata-dev", yaml_path, {"pr_number": pr_number}
+        )
 
     # log results as W&B artifacts
     # TODO update team name once it's changed
