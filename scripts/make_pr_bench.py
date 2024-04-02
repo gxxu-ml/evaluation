@@ -27,20 +27,14 @@ def read_qna(fn):
     except:
         return None
 
-
-@click.command()
-@click.option('--taxonomy-dir')
-@click.option('--output-dir')
-@click.option('--keep-all', is_flag=True)
-@click.option('--add-date', is_flag=True)
-def main(taxonomy_dir, output_dir, keep_all, add_date):
+def make_pr_bench(taxonomy_dir, output_dir, keep_all, add_date, changed_qnas_to_pr=None):
     qna_fn_lst = get_file_paths(taxonomy_dir)
 
-    qna_fn_lst_d = []
     question_lst = []
     idx_q = 0
     for qna_fn in tqdm(qna_fn_lst):
         examples = read_qna(qna_fn)
+        qna_fn = qna_fn[len(taxonomy_dir) + 1:]
         if examples is None:
             print(f"failed to load {qna_fn}. skipping...")
             continue
@@ -55,16 +49,19 @@ def main(taxonomy_dir, output_dir, keep_all, add_date):
                 t_1 = q
             else:
                 t_1 = "Given the context below:\n" + c + "\n" + "Answer the following question: " + q
-            qna_fn_lst_d.append(qna_fn)
-            question_lst.append(
-                {
-                    "qna_fn": qna_fn,
-                    "question_id": idx_q, 
-                    "category": "taxonomy", 
-                    "turns": [t_1], 
-                    "reference": [a],
-                }
-            )
+            question = {
+                "qna_fn": qna_fn,
+                "question_id": idx_q, 
+                "category": "taxonomy", 
+                "turns": [t_1], 
+                "reference": [a],
+            }
+            if changed_qnas_to_pr is not None:
+                pr_num = changed_qnas_to_pr.get(qna_fn)
+                if pr_num is not None:
+                    question["pr_num"] = "#" + pr_num
+            question_lst.append(question)
+
             idx_q += 1
 
     print(f"generated {len(question_lst)} questions")
@@ -81,6 +78,14 @@ def main(taxonomy_dir, output_dir, keep_all, add_date):
         for entry in question_lst:
             json.dump(entry, outfile)
             outfile.write("\n")
+
+@click.command()
+@click.option('--taxonomy-dir')
+@click.option('--output-dir')
+@click.option('--keep-all', is_flag=True)
+@click.option('--add-date', is_flag=True)
+def main(taxonomy_dir, output_dir, keep_all, add_date):
+    make_pr_bench(taxonomy_dir, output_dir, keep_all, add_date)
 
 
 if __name__ == "__main__":

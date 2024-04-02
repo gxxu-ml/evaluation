@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
 import os
+import re
+import git
 import click
 from matplotlib import pyplot as plt
 import pandas as pd
+from github import Github
+
+from make_pr_bench import make_pr_bench
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -11,6 +16,44 @@ pd.set_option('display.expand_frame_repr', False)
 pd.set_option('max_colwidth', None)
 
 plt.style.use("bmh")
+
+OWNER = "instruct-lab"
+REPO_NAME = "taxonomy"
+DEFAULT_BRANCH = "main"
+
+
+def get_changed_qnas_to_pr(repo: object, stage_branch: str) -> list:
+    main_branch = repo.get_branch(DEFAULT_BRANCH)
+    stage_commit = repo.get_branch(stage_branch).commit
+    main_commit = main_branch.commit
+
+    diff = repo.compare(main_commit.sha, stage_commit.sha)
+
+    changed_files = {}
+    for commit in diff.commits:
+        commit_obj = repo.get_commit(commit.sha)
+        commit_message = commit_obj.commit.message
+        pr_numbers = re.findall(r"#(\d+)", commit_message)
+        for f in commit_obj.files:
+            if f.filename.endswith("qna.yaml"):
+                changed_files[f.filename] = pr_numbers[0]
+
+    return changed_files
+
+
+def save_group_by(df_diff, primary_group_by, name, output_dir):
+    df_g = df_diff.groupby([primary_group_by, 'model'])[
+        "score"].mean().unstack(fill_value=0)
+
+    df_g.head().to_csv(os.path.join(output_dir, name + ".csv"),
+                       sep=',', index=True, encoding='utf-8')
+
+    if df_g.get("merlinite-7b") is not None:
+        fig = make_fig(df_g)
+        fig.savefig(os.path.join(output_dir, name + ".png"))
+
+        fig = make_fig(df_g, 5.5)
+        fig.savefig(os.path.join(output_dir, name + "_5.5.png"))
 
 
 def gather_pr_bench(workspace_dir, data_dir, data_dir_old, output_dir):
@@ -49,22 +92,12 @@ def gather_pr_bench(workspace_dir, data_dir, data_dir_old, output_dir):
     df_j_diff.groupby("model")["score"].mean().reset_index().to_csv(os.path.join(
         output_dir, "pr_bench_scores.csv"), sep=',', index=False, encoding='utf-8')
 
-    df_g = df_j_diff.groupby(['qna_fn', 'model'])[
-        "score"].mean().unstack(fill_value=0)
-
-    df_g.head().to_csv(os.path.join(output_dir, "qna_scores.csv"),
-                       sep=',', index=True, encoding='utf-8')
-
-    if df_g.get("merlinite-7b") is not None:
-        fig = make_fig(df_g)
-        fig.savefig(os.path.join(output_dir, "qna_scores.png"))
-
-        fig = make_fig(df_g, 5.5)
-        fig.savefig(os.path.join(output_dir, "qna_scores_5.5.png"))
+    save_group_by(df_j_diff, "qna_fn", "qna_scores", output_dir)
+    save_group_by(df_j_diff, "pr_num", "pr_scores", output_dir)
 
 
 def gather_mt_bench(data_dir, output_dir):
-    model_dir_mt_bench = os.path.join(output_dir, "mt_bench")
+    model_dir_mt_bench = os.path.join(data_dir, "mt_bench")
 
     fn_q = os.path.join(model_dir_mt_bench, "question.jsonl")
     df_q = pd.read_json(fn_q, lines=True)
@@ -108,11 +141,37 @@ def make_fig(df_g, ths=10):
     show_default=True,
     help="The workspace directory"
 )
-def main(workspace_dir):
+@click.option(
+    "--taxonomy-dir",
+    required=True,
+    help="The location of the taxonomy repo"
+)
+@click.option(
+    "--eval-branch",
+    required=True,
+    help="The branch of the taxonomy repo to evaluate"
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(),
+    required=True,
+    help="The output directory"
+)
+def main(workspace_dir, taxonomy_dir, eval_branch, output_dir):
     data_dir = os.path.join(workspace_dir, "FastChat/fastchat/llm_judge/data")
     data_dir_old = os.path.join(
         workspace_dir, "FastChat/fastchat/llm_judge/data-old")
-    output_dir = data_dir
+
+    git_access_token = os.getenv("GIT_ACCESS_TOKEN", None)
+    g = Github(git_access_token)
+    repo = g.get_repo(f"{OWNER}/{REPO_NAME}")
+    changed_qnas_to_pr = get_changed_qnas_to_pr(repo, eval_branch)
+
+    taxonomy_repo = git.Repo(taxonomy_dir)
+    taxonomy_repo.git.checkout(eval_branch)
+    make_pr_bench(taxonomy_dir, data_dir, True, False, changed_qnas_to_pr)
+    taxonomy_repo.git.checkout(DEFAULT_BRANCH)
+    make_pr_bench(taxonomy_dir, data_dir_old, True, False)
 
     gather_pr_bench(workspace_dir, data_dir, data_dir_old, output_dir)
     gather_mt_bench(data_dir, output_dir)
