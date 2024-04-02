@@ -36,6 +36,8 @@ def get_documents(client, db_name, as_dict=False):
 def create_or_update_document(client, db_name, doc_id, data_dict):
     try:
         doc = get_document(client, db_name, doc_id)
+        for k, v in data_dict.items():
+            doc[k] = v
         print(f'Updating "{doc_id}" from "{db_name}"...')
     except ApiException as e:
         if e.status_code == 404:
