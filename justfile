@@ -37,7 +37,7 @@ start_local model_name org="ibm":
     fi
     pip install --quiet --use-pep517 ".[model_worker]"
     # for analysis.py
-    pip install wandb matplotlib pandas pygithub ibmcloudant
+    pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
     cd $REPO_ROOT
 
     screen -dmS controller -- python3 -m fastchat.serve.controller
