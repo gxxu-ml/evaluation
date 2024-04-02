@@ -2,7 +2,7 @@ projdir := justfile_directory()
 
 [private]
 default:
-    just --list
+    ./just --list
 
 link_rc model_path:
     #!/usr/bin/env bash
@@ -11,8 +11,8 @@ link_rc model_path:
     fi
     ln -s {{model_path}} {{projdir / "ibm" / "merlinite-7b-rc"}}
 
-prepare_bench workspace:
-    ./scripts/prepare_fschat_bench.sh {{workspace}}
+prepare_bench *args:
+    ./scripts/prepare_fschat_bench.sh {{args}}
 
 start_local model_name org="ibm":
     #!/usr/bin/env bash
@@ -31,14 +31,17 @@ start_local model_name org="ibm":
     cd $REPO_ROOT/FastChat
     if [[ "{{org}}" == "ibm" ]]; then
         git switch kx/openai-api-hack
+        git checkout fdc7e4ec9a9ea7a9ccef1056e5b217828c9b401c
     else
         git switch main
     fi
     pip install --quiet --use-pep517 ".[model_worker]"
+    # for analysis.py
+    pip install wandb matplotlib pandas pygithub
     cd $REPO_ROOT
 
     screen -dmS controller -- python3 -m fastchat.serve.controller
-    sleep 10
+    sleep 20
 
     for i in {0..4}
     do
@@ -48,7 +51,7 @@ start_local model_name org="ibm":
             --port 3100$i \
             --worker http://localhost:3100$i
     done
-    sleep 20
+    sleep 40
 
     screen -dmS server -- python3 -m fastchat.serve.openai_api_server \
         --host localhost \
@@ -86,7 +89,7 @@ run_judge workspace model bench_name:
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    OPENAI_API_KEY=${OPEN_API_KEY} python gen_judgment.py \
+    OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
         --parallel 40 \
@@ -100,19 +103,53 @@ quick-sync:
     git commit -m "quick sync"
     git push
 
-run_all rc_model_path workspace model bench_name:
-    #!/usr/bin/env bash
-    echo "Running evaluation {{bench_name}} with model {{model}} in workspace {{workspace}}"
-    ./just prepare_bench {{workspace}}
-    ./just link_rc {{rc_model_path}}
-    echo "Done preparing workspace..Starting server..."
+run_eval model:
+    echo "Starting server for {{model}}..."
     ./just start_local {{model}}
-    echo "Done starting up server...Running run_bench..."
-    ./just run_bench {{workspace}} {{model}} {{bench_name}}
+    echo "...Done starting server!"
+
+    echo "Running MT-Bench (generation)..."
+    ./just run_bench ws-mt {{model}} mt_bench
     ./just wait_for_run_bench
-    echo "Done with run_bench...running evaluation..."
-    ./just run_judge {{workspace}} {{model}} {{bench_name}}
-    echo "Done with evaluation!"
+    echo "...Done running MT-Bench (generation)!"
+
+    echo "Running MT-Bench (judgement)..."
+    ./just run_judge ws-mt {{model}} mt_bench
+    echo "...Done running MT-Bench (judgement)!"
+
+    echo "Running PR-Bench (generation)..."
+    ./just run_bench ws-pr {{model}} pr_bench
+    ./just wait_for_run_bench
+    echo "...Done running PR-Bench (generation)!"
+
+    echo "Running PR-Bench (judgement)..."
+    ./just run_judge ws-pr {{model}} pr_bench
+    echo "...Done running PR-Bench (judgement)!"
+
+run_all rc_branch_name rc_model_path:
+    #!/usr/bin/env bash
+    echo "Evaluating current model and RC model from {{rc_model_path}}..."
+
+    echo "Preparing workspaces for MT-Bench and PR-Bench..."
+    ./just prepare_bench ws-mt
+    ./just prepare_bench ws-pr {{rc_branch_name}}
+    echo "...Done reparing workspaces!"
+
+    ./just link_rc {{rc_model_path}}
+
+    echo "Evaluating current model..."
+    ./just run_eval merlinite-7b
+    echo "...Done evaluating current model!"
+
+    echo "Killing current model..."
+    pkill screen
+    echo "...Done killing current model!"
+
+    echo "Evaluating RC model..."
+    ./just run_eval merlinite-7b-rc
+    echo "...Done evaluating RC model!"
+    
+    echo "...Done evaluating current model and RC model!"
 
 wait_for_run_bench:
     #!/usr/bin/env bash

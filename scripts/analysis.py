@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import os
+os.environ["WANDB_BASE_URL"] = "https://wandb-instance.105mljrhdm0c.us-east.codeengine.appdomain.cloud/"
 import re
 import git
 import click
 from matplotlib import pyplot as plt
 import pandas as pd
 from github import Github
+import wandb
 
 from make_pr_bench import make_pr_bench
 
@@ -56,19 +58,18 @@ def save_group_by(df_diff, primary_group_by, name, output_dir):
         fig.savefig(os.path.join(output_dir, name + "_5.5.png"))
 
 
-def gather_pr_bench(workspace_dir, data_dir, data_dir_old, output_dir):
-    old_model_dir_pr_bench = os.path.join(data_dir_old, "pr_bench")
+def gather_pr_bench(workspace_dir, data_dir, output_dir):
     model_dir_pr_bench = os.path.join(data_dir, "pr_bench")
 
-    fn_q = os.path.join(model_dir_pr_bench, "question.jsonl")
+    fn_q = os.path.join(model_dir_pr_bench, "question-eval.jsonl")
     df_q = pd.read_json(fn_q, lines=True)
     print(f"{len(df_q)=}")
 
-    fn_q_old = os.path.join(old_model_dir_pr_bench, "question.jsonl")
+    fn_q_old = os.path.join(model_dir_pr_bench, "question-main.jsonl")
     df_q_old = pd.read_json(fn_q_old, lines=True)
     print(f"{len(df_q_old)=}")
 
-    fn_j = os.path.join(model_dir_pr_bench, "gpt-4_single.jsonl")
+    fn_j = os.path.join(model_dir_pr_bench, "model_judgment", "gpt-4_single.jsonl")
     df_j = pd.read_json(fn_j, lines=True)
     print(f"{len(df_j)=}")
 
@@ -103,7 +104,7 @@ def gather_mt_bench(data_dir, output_dir):
     df_q = pd.read_json(fn_q, lines=True)
     print(f"{len(df_q)=}")
 
-    fn_j = os.path.join(model_dir_mt_bench, "gpt-4_single.jsonl")
+    fn_j = os.path.join(model_dir_mt_bench, "model_judgment", "gpt-4_single.jsonl")
     df_j = pd.read_json(fn_j, lines=True)
     print(f"{len(df_j)=}")
 
@@ -135,11 +136,11 @@ def make_fig(df_g, ths=10):
 
 @click.command()
 @click.option(
-    "--workspace-dir",
+    "--project-dir",
     type=click.Path(),
-    default="/root/labrador-evaluation/ws",
+    default="/root/evaluation",
     show_default=True,
-    help="The workspace directory"
+    help="The project directory"
 )
 @click.option(
     "--taxonomy-dir",
@@ -157,25 +158,46 @@ def make_fig(df_g, ths=10):
     required=True,
     help="The output directory"
 )
-def main(workspace_dir, taxonomy_dir, eval_branch, output_dir):
-    data_dir = os.path.join(workspace_dir, "FastChat/fastchat/llm_judge/data")
-    data_dir_old = os.path.join(
-        workspace_dir, "FastChat/fastchat/llm_judge/data-old")
+def main(project_dir, taxonomy_dir, eval_branch, output_dir):
+    workspace_dir_mt = os.path.join(project_dir, "ws-mt")
+    workspace_dir_pr = os.path.join(project_dir, "ws-pr")
+    data_dir_pr = os.path.join(workspace_dir_pr, "FastChat/fastchat/llm_judge/data")
+    data_dir_mt = os.path.join(workspace_dir_mt, "FastChat/fastchat/llm_judge/data")
 
-    git_access_token = os.getenv("GIT_ACCESS_TOKEN", None)
-    g = Github(git_access_token)
+    gh_token = os.getenv("GH_TOKEN", None)
+    g = Github(gh_token)
     repo = g.get_repo(f"{OWNER}/{REPO_NAME}")
     changed_qnas_to_pr = get_changed_qnas_to_pr(repo, eval_branch)
 
     taxonomy_repo = git.Repo(taxonomy_dir)
     taxonomy_repo.git.checkout(eval_branch)
-    make_pr_bench(taxonomy_dir, data_dir, True, False, changed_qnas_to_pr)
+    make_pr_bench(taxonomy_dir, data_dir_pr, True, False, changed_qnas_to_pr, suffix="eval")
     taxonomy_repo.git.checkout(DEFAULT_BRANCH)
-    make_pr_bench(taxonomy_dir, data_dir_old, True, False)
+    make_pr_bench(taxonomy_dir, data_dir_pr, True, False, suffix="main")
 
-    gather_pr_bench(workspace_dir, data_dir, data_dir_old, output_dir)
-    gather_mt_bench(data_dir, output_dir)
+    gather_pr_bench(workspace_dir_pr, data_dir_pr, output_dir)
+    gather_mt_bench(data_dir_mt, output_dir)
 
+    # log results as W&B artifacts
+    # TODO update team name once it's changed
+    run = wandb.init(entity="instructlab-backend", project="ilab", job_type="evaluation")
+
+    # TODO implement below when the upstream artifact is ready
+    #run.use_artifact("bike-dataset:latest")
+
+    artifact = wandb.Artifact(name="mt_bench", type="evaluation")
+    artifact.add_dir(local_path=os.path.join(data_dir_mt, "mt_bench"))
+    run.log_artifact(artifact)
+
+    artifact = wandb.Artifact(name="pr_bench", type="evaluation")
+    artifact.add_dir(local_path=os.path.join(data_dir_pr, "pr_bench"))
+    run.log_artifact(artifact)
+
+    artifact = wandb.Artifact(name="analysis", type="evaluation")
+    artifact.add_dir(local_path=output_dir)
+    run.log_artifact(artifact)
+
+    run.finish()
 
 if __name__ == "__main__":
     main()
