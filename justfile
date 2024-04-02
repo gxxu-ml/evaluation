@@ -36,11 +36,12 @@ start_local model_name org="ibm":
         git switch main
     fi
     pip install --quiet --use-pep517 ".[model_worker]"
-    pip install wandb
+    # for analysis.py
+    pip install wandb matplotlib pandas pygithub
     cd $REPO_ROOT
 
     screen -dmS controller -- python3 -m fastchat.serve.controller
-    sleep 10
+    sleep 20
 
     for i in {0..4}
     do
@@ -50,7 +51,7 @@ start_local model_name org="ibm":
             --port 3100$i \
             --worker http://localhost:3100$i
     done
-    sleep 20
+    sleep 40
 
     screen -dmS server -- python3 -m fastchat.serve.openai_api_server \
         --host localhost \
@@ -88,7 +89,7 @@ run_judge workspace model bench_name:
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    OPENAI_API_KEY=${OPEN_API_KEY} python gen_judgment.py \
+    OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
         --parallel 40 \
@@ -125,15 +126,16 @@ run_eval model:
     ./just run_judge ws-pr {{model}} pr_bench
     echo "...Done running PR-Bench (judgement)!"
 
-run_all rc_model_path:
+run_all rc_branch_name rc_model_path:
     #!/usr/bin/env bash
     echo "Evaluating current model and RC model from {{rc_model_path}}..."
-    ./just link_rc {{rc_model_path}}
 
     echo "Preparing workspaces for MT-Bench and PR-Bench..."
-    ./just prepare_bench ws-mt --skip-pr
-    ./just prepare_bench ws-pr
+    ./just prepare_bench ws-mt
+    ./just prepare_bench ws-pr {{rc_branch_name}}
     echo "...Done reparing workspaces!"
+
+    ./just link_rc {{rc_model_path}}
 
     echo "Evaluating current model..."
     ./just run_eval merlinite-7b

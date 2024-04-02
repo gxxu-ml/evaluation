@@ -23,8 +23,8 @@ spec:
                                 value: "0,1,2,3,4,5,6,7"
                               - name: GH_TOKEN
                                 value: "gh-token"
-                              - name: OPEN_API_KEY
-                                value: "open-api-key"
+                              - name: OPENAI_API_KEY
+                                value: "openai-api-key"
                               - name: WANDB_API_KEY
                                 value: "wandb-api-key"
                           command:
@@ -34,10 +34,11 @@ spec:
                                 cd /root
                                 git clone https://$GH_TOKEN@github.com/instruct-lab/evaluation.git
                                 cd evaluation/
+                                mkdir results
                                 curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
                                 tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
-                                # ./just run_all rc-model-path
-                                # python scripts/analysis.py
+                                ./just run_all rc-branch-name rc-model-path
+                                ./venv/bin/python scripts/analysis.py --taxonomy-dir $HOME/evaluation/ws-pr/taxonomy --eval-branch rc-branch-name --output-dir $HOME/evaluation/results
                                 tail -f /dev/null
                           resources:
                               limits:

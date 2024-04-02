@@ -2,15 +2,15 @@
 
 # Check if at least one argument is provided
 if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <workspace_root> [--skip-pr]"
+    echo "Usage: $0 <workspace_root> [rc_branch_name]"
     echo "  workspace_root: The root directory for the workspace."
-    echo "  --skip-pr: Optional. If set, skip PR-Bench creation and modification."
+    echo "  rc_branch_name: Optional. If set, use this branch for the PR-Bench creation and modification. If not provided, skip PR-Bench creation and modification."
     exit 1
 fi
 
 REPO_ROOT=$(pwd)
 WORKSPACE=$(realpath "$1")
-SKIP_PR=$2
+RC_BRANCH=$2
 
 # Check if the directory exists, if not create it
 if [ ! -d "$WORKSPACE" ]; then
@@ -29,13 +29,13 @@ python3.9 -m venv venv
 source venv/bin/activate
 pip install -U setuptools
 
-if [ "$SKIP_PR" == "--skip-pr" ]; then
+if [ -z "$RC_BRANCH" ]; then
     echo "Skipping cloning taxonomy repo..."
 else
     echo "Cloning taxonomy repo..."
     git clone --quiet https://${GH_TOKEN}@github.com/instruct-lab/taxonomy.git
     cd $WORKSPACE/taxonomy
-    git switch test-release-031624
+    git switch $RC_BRANCH
     cd $WORKSPACE
 fi
 
@@ -52,7 +52,7 @@ sed -i 's/NEED_REF_CATS = \[/NEED_REF_CATS = \["taxonomy", /g' $WORKSPACE/FastCh
 sed -i 's/args = parser.parse_args()/parser.add_argument("--yes", action="store_true")\n    args = parser.parse_args()/g' $WORKSPACE/FastChat/fastchat/llm_judge/gen_judgment.py
 sed -i 's/input("Press Enter to confirm...")/if not args.yes:\n        input("Press Enter to confirm...")/g' $WORKSPACE/FastChat/fastchat/llm_judge/gen_judgment.py
 
-if [ "$SKIP_PR" == "--skip-pr" ]; then
+if [ -z "$RC_BRANCH" ]; then
     echo "Skipping PR-Bench prompt modification and data creation..."
 else
     echo "Modifying judge prompt for PR-Bench..."
