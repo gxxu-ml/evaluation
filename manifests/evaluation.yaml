@@ -25,16 +25,19 @@ spec:
                                 value: "gh-token"
                               - name: OPEN_API_KEY
                                 value: "open-api-key"
+                              - name: WANDB_API_KEY
+                                value: "wandb-api-key"
                           command:
                               - sh
                               - -c
                               - |
                                 cd /root
-                                git clone gh-token@github.com/instruct-lab/evaluation.git
+                                git clone https://$GH_TOKEN@github.com/instruct-lab/evaluation.git
                                 cd evaluation/
                                 curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
                                 tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
-                                ./just run_all rc-model-path workspace model-name eval-name
+                                # ./just run_all rc-model-path
+                                # python scripts/analysis.py
                                 tail -f /dev/null
                           resources:
                               limits:
