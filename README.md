@@ -35,6 +35,19 @@ $  oc get pods -w | grep test-evaluation
 test-evaluation-master-0        0/1     Pending             0          10s
 test-evaluation-master-0        0/1     ContainerCreating   0          85s
 test-evaluation-master-0        0/1     Running             0          1m53s
+
+$  oc logs -f test-evaluation-master-0
+Cloning into 'evaluation'...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 2176k  100 2176k    0     0  40.8M      0 --:--:-- --:--:-- --:--:--  274M
+Evaluating current model and RC model from /new_data/experiments/ap-m-10-pr0316-v4/sft_model/epoch_4_step_390720...
+Preparing workspaces for MT-Bench and PR-Bench...
+./scripts/prepare_fschat_bench.sh ws-mt
+Directory /root/evaluation/ws-mt does not exist. Creating it...
+Changing directory to /root/evaluation/ws-mt...
+...
 ```
 
 and the evaluation & analsysi results will be pushed to W&B
