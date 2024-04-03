@@ -1,6 +1,6 @@
 # Run mt-bench/pr-bench evaluation
 
-Running the evalution: 
+Running the evaluation: 
 
 Once you've logged into the cluster, run the following command using the manifest `manifests/evaluation.yaml`:
 
@@ -54,4 +54,4 @@ Changing directory to /root/evaluation/ws-mt...
 ...
 ```
 
-and the evaluation & analsysi results will be pushed to W&B
+The evaluation & analysis results will be pushed to W&B
