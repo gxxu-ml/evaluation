@@ -42,6 +42,9 @@ spec:
                                 curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
                                 tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
                                 ./just run_all rc-branch-name rc-model-path
+                                ./scripts/prepare_pr_mmlu.sh $BASE_PATH/ws-mmlu-pr $SDG_PATH
+                                ./scripts/run_pr_mmlu.sh workspace_path $BASE_PATH/ws-mmlu-pr/base_model_results.json $HOME/evaluation/ibm/merlinite-7b $NUM_SHOT $BATCH_SIZE
+                                ./scripts/run_pr_mmlu.sh workspace_path $BASE_PATH/ws-mmlu-pr/rc_model_results.json $HOME/evaluation/ibm/merlinite-7b-rc $NUM_SHOT $BATCH_SIZE
                                 ./venv/bin/python scripts/analysis.py --taxonomy-dir $HOME/evaluation/ws-pr/taxonomy --eval-branch rc-branch-name --output-dir $HOME/evaluation/results
                                 tail -f /dev/null
                           resources:

@@ -55,3 +55,21 @@ Changing directory to /root/evaluation/ws-mt...
 ```
 
 The evaluation & analysis results will be pushed to W&B
+
+# Run MMLU PR Evaluation
+
+* Prepare the evaluation files. This script needs workspace directory location where the lm-harness will be cloned and 
+sdg (synthetic data generation) path root where dataset files are created
+```shell
+./scripts/prepare_pr_mmlu.sh workspace sdg_path
+
+# Example:
+./scripts/prepare_pr_mmlu.sh /app/test/ws-mmlu-pr /new_data/e2e_apr8/
+```
+* Run MMLU PR Eval by running below script for running mmlu on `model_path` with num_few_shot `1` and batch_size `2`
+```shell
+./scripts/run_pr_mmlu.sh workspace_path output_path model_path num_few_shot batch_size
+
+# Example:
+./scripts/run_pr_mmlu.sh /app/test/workspace-mmlu-pr/ /appt/test/results.json /new_data/model_checkpoint 1 2
+```

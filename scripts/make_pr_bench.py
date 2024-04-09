@@ -51,9 +51,9 @@ def make_pr_bench(taxonomy_dir, output_dir, keep_all, add_date, changed_qnas_to_
                 t_1 = "Given the context below:\n" + c + "\n" + "Answer the following question: " + q
             question = {
                 "qna_fn": qna_fn,
-                "question_id": idx_q, 
-                "category": "taxonomy", 
-                "turns": [t_1], 
+                "question_id": idx_q,
+                "category": "taxonomy",
+                "turns": [t_1],
                 "reference": [a],
             }
             if changed_qnas_to_pr is not None:
