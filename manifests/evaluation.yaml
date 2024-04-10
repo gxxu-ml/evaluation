@@ -68,6 +68,8 @@ spec:
                                 mountPath: /new_data
                               - name: scratch2
                                 mountPath: /inter-ckpts
+                              - name: scratch3
+                                mountPath: /instruct_lab
                               - name: dshm
                                 mountPath: "/dev/shm"
                     volumes:
@@ -77,6 +79,9 @@ spec:
                         - name: scratch2
                           persistentVolumeClaim:
                               claimName: inter-ckpts
+                        - name: scratch3
+                          persistentVolumeClaim:
+                              claimName: instruct-lab
                         - name: dshm
                           emptyDir:
                               medium: Memory
