@@ -46,6 +46,12 @@ spec:
                                 ./scripts/run_pr_mmlu.sh workspace_path $HOME/evaluation/ws-mmlu-pr/base_model_results.json $HOME/evaluation/ibm/merlinite-7b $NUM_SHOT $BATCH_SIZE
                                 ./scripts/run_pr_mmlu.sh workspace_path $HOME/evaluation/ws-mmlu-pr/rc_model_results.json $HOME/evaluation/ibm/merlinite-7b-rc $NUM_SHOT $BATCH_SIZE
                                 ./venv/bin/python scripts/analysis.py --taxonomy-dir $HOME/evaluation/ws-pr/taxonomy --eval-branch rc-branch-name --output-dir $HOME/evaluation/results
+                                mkdir -p /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $HOME/evaluation/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
+                                cp $HOME/evaluation/ws-pr/FastChat/fastchat/llm_judge/data/pr_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
+                                cp $BASE_PATH/ws-mmlu-pr/base_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $BASE_PATH/ws-mmlu-pr/rc_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $HOME/evaluation/results /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
                                 tail -f /dev/null
                           resources:
                               limits:
