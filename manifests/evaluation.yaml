@@ -49,8 +49,8 @@ spec:
                                 mkdir -p /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
                                 cp $HOME/evaluation/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
                                 cp $HOME/evaluation/ws-pr/FastChat/fastchat/llm_judge/data/pr_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
-                                cp $BASE_PATH/ws-mmlu-pr/base_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
-                                cp $BASE_PATH/ws-mmlu-pr/rc_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $HOME/evaluation/ws-mmlu-pr/base_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $HOME/evaluation/ws-mmlu-pr/rc_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
                                 cp $HOME/evaluation/results /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
                                 tail -f /dev/null
                           resources:
