@@ -7,12 +7,16 @@ Once you've logged into the cluster, run the following command using the manifes
 ```bash
 sed -e 's|job-name|<evaluation-job-name>|g' \                
 -e 's|gh-token|<GH_TOKEN>|g' \
+-e 's|ibm-gh-token|<GH_TOKEN-that-has-access-to-ibm-repos>|g' \
 -e 's|openai-api-key|<OPENAI_API_KEY>|g' \
 -e 's|wandb-api-key|<WANDB_API_KEY>|g' \
 -e 's|cloudant-url|<CLOUDANT_URL>|g' \
 -e 's|cloudant-apikey|<CLOUDANT_APIKEY>|g' \
 -e 's|rc-branch-name|<release-candidate-branch-of-the-taxonomy-repo>|g' \
 -e 's|rc-model-path|<path-in-volume-mount-where-rc-model-is-mounted>|g' \
+-e 's|num_shot|<few-shot number>|g' \
+-e 's|batch_size|<size of batch to be processed parallely>|g' \
+-e 's|sdg_path|<path-in-the-cos-bucket-where-sdg-data-is-stored>|g' \
 manifests/evaluation.yaml \
 | oc apply -f -
 ```
@@ -26,12 +30,16 @@ $ cd evaluation
 
 $ sed -e 's|job-name|test-evaluation|g' \                
 -e 's|gh-token|$GH_TOKEN|g' \
+-e 's|ibm-gh-token|$IBM_GH_TOKEN|g' \
 -e 's|openai-api-key|$OAI_KEY|g' \
 -e 's|wandb-api-key|$WANDB_KEY|g' \
 -e 's|cloudant-url|$CLOUDANT_URL|g' \
 -e 's|cloudant-apikey|$CLOUDANT_APIKEY|g' \
 -e 's|rc-branch-name|test-release-031624|g' \
 -e 's|rc-model-path|"/new_data/experiments/ap-m-10-pr0316-v4/sft_model/epoch_4_step_390720"|g' \
+-e 's|num_shot|1|g' \
+-e 's|batch_size|2|g' \
+-e 's|sdg_path|/instruct_lab/synthetic_data/|g' \
 manifests/evaluation.yaml \
 | oc apply -f -
 
