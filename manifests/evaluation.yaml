@@ -53,7 +53,7 @@ spec:
                                 chmod +x ./scripts/prepare_pr_mmlu.sh
                                 chmod +x ./scripts/run_pr_mmlu.sh
                                 ./scripts/prepare_pr_mmlu.sh $HOME/evaluation/ws-mmlu-pr $SDG_PATH
-                                ./scripts/run_pr_mmlu.sh ws-mmlu-pr $HOME/evaluation/ws-mmlu-pr/base_model_results.json $HOME/evaluation/ibm/merlinite-7b-rc $NUM_SHOT $BATCH_SIZE # TODO: this should be ibm/merlinite-7b
+                                ./scripts/run_pr_mmlu.sh ws-mmlu-pr $HOME/evaluation/ws-mmlu-pr/base_model_results.json ibm/merlinite-7b $NUM_SHOT $BATCH_SIZE # TODO: this should be ibm/merlinite-7b
                                 ./scripts/run_pr_mmlu.sh ws-mmlu-pr $HOME/evaluation/ws-mmlu-pr/rc_model_results.json $HOME/evaluation/ibm/merlinite-7b-rc $NUM_SHOT $BATCH_SIZE
                                 ./venv/bin/python scripts/analysis.py --taxonomy-dir $HOME/evaluation/ws-pr/taxonomy --eval-branch rc-branch-name --output-dir $HOME/evaluation/results
                                 mkdir -p /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
