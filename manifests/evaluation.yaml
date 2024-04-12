@@ -62,7 +62,6 @@ spec:
                                 cp $HOME/evaluation/ws-mmlu-pr/base_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
                                 cp $HOME/evaluation/ws-mmlu-pr/rc_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
                                 cp -r $HOME/evaluation/results /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
-                                tail -f /dev/null
                           resources:
                               limits:
                                   cpu: 72
