@@ -97,6 +97,17 @@ run_judge workspace model bench_name:
 
     python show_result.py --bench-name {{bench_name}}
 
+run_bench_judge workspace model bench_name:
+    echo "Running MT-Bench (generation)..."
+    ./just run_bench {{workspace}} {{model}} {{bench_name}}
+    echo "...Done running MT-Bench (generation)!"
+
+    ./just wait_for_run_bench
+
+    echo "Running MT-Bench (judgement)..."
+    ./just run_judge {{workspace}} {{model}} {{bench_name}}
+    echo "...Done running MT-Bench (judgement)!"
+
 quick-sync:
     #!/usr/bin/env bash
     git add --update
@@ -108,23 +119,9 @@ run_eval model:
     ./just start_local {{model}}
     echo "...Done starting server!"
 
-    echo "Running MT-Bench (generation)..."
-    ./just run_bench ws-mt {{model}} mt_bench
-    ./just wait_for_run_bench
-    echo "...Done running MT-Bench (generation)!"
+    ./just run_bench_judge ws-mt {{model}} mt_bench
 
-    echo "Running MT-Bench (judgement)..."
-    ./just run_judge ws-mt {{model}} mt_bench
-    echo "...Done running MT-Bench (judgement)!"
-
-    echo "Running PR-Bench (generation)..."
-    ./just run_bench ws-pr {{model}} pr_bench
-    ./just wait_for_run_bench
-    echo "...Done running PR-Bench (generation)!"
-
-    echo "Running PR-Bench (judgement)..."
-    ./just run_judge ws-pr {{model}} pr_bench
-    echo "...Done running PR-Bench (judgement)!"
+    ./just run_bench_judge ws-pr {{model}} pr_bench
 
 run_all rc_branch_name rc_model_path:
     #!/usr/bin/env bash
@@ -148,6 +145,10 @@ run_all rc_branch_name rc_model_path:
     echo "Evaluating RC model..."
     ./just run_eval merlinite-7b-rc
     echo "...Done evaluating RC model!"
+
+    echo "Killing current model..."
+    pkill screen
+    echo "...Done killing current model!"
     
     echo "...Done evaluating current model and RC model!"
 
