@@ -14,9 +14,15 @@ link_rc model_path:
 prepare_bench *args:
     ./scripts/prepare_fschat_bench.sh {{args}}
 
-start_local model_name org="ibm":
+start_local model_name model_path="":
     #!/usr/bin/env bash
     REPO_ROOT=$(pwd)
+
+    if [ "{{model_path}}" = "" ]; then
+        model_path="ibm/{{model_name}}"
+    else
+        model_path={{model_path}}
+    fi
 
     if [ ! -d "venv" ]; then
         echo "Creating a virtual environment..."
@@ -29,7 +35,7 @@ start_local model_name org="ibm":
         git clone --quiet https://github.com/shivchander/FastChat.git
     fi
     cd $REPO_ROOT/FastChat
-    if [[ "{{org}}" == "ibm" ]]; then
+    if [[ "$model_path" == ibm/* ]]; then
         git switch kx/openai-api-hack
         git checkout fdc7e4ec9a9ea7a9ccef1056e5b217828c9b401c
     else
@@ -46,7 +52,7 @@ start_local model_name org="ibm":
     for i in {0..4}
     do
         CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python3 -m fastchat.serve.model_worker \
-            --model-path {{org}}/{{model_name}} \
+            --model-path {{model_path}} \
             --model-name {{model_name}}-$i \
             --port 3100$i \
             --worker http://localhost:3100$i
@@ -158,3 +164,16 @@ wait_for_run_bench:
         echo "Still running run_bench.."
         sleep 30
     done
+
+run_mt model_name model_path:
+    echo "Preparing workspace for MT-Bench"
+    ./just prepare_bench ws-mt
+    echo "...Done reparing workspaces!"
+
+    echo "Starting server for {{model_name}} using {{model_path}}..."
+    ./just start_local {{model_name}} {{model_path}}
+    echo "...Done starting server!"
+
+    ./just run_bench_judge ws-mt {{model_name}} mt_bench
+
+    cp -r {{projdir / ws-mt / FastChat / fastchat / llm_judge / data / mt_bench}}  {{model_path}}
