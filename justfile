@@ -176,4 +176,4 @@ run_mt model_name model_path:
 
     ./just run_bench_judge ws-mt {{model_name}} mt_bench
 
-    cp -r {{projdir / ws-mt / FastChat / fastchat / llm_judge / data / mt_bench}}  {{model_path}}
+    cp -r {{projdir}}/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench  {{model_path}}
