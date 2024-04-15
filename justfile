@@ -167,7 +167,7 @@ wait_for_run_bench:
 
 run_mt model_name model_path:
     echo "Preparing workspace for MT-Bench"
-    ./just prepare_bench ws-mt
+    test -d {{projdir}}/ws-mt || ./just prepare_bench ws-mt
     echo "...Done reparing workspaces!"
 
     echo "Starting server for {{model_name}} using {{model_path}}..."
@@ -176,4 +176,17 @@ run_mt model_name model_path:
 
     ./just run_bench_judge ws-mt {{model_name}} mt_bench
 
-    cp -r {{projdir}}/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench  {{model_path}}
+    echo "Killing current model..."
+    pkill screen
+    echo "...Done killing current model!"
+
+    cp -r {{projdir}}/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_path}}
+
+run_mt_dir model_name model_dir:
+    #!/bin/env bash
+
+    fns=(`ls {{model_dir}}`)
+
+    for fn in "${fns[@]}"; do
+        ./just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
+    done
