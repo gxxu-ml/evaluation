@@ -100,9 +100,8 @@ run_judge workspace model bench_name:
 run_bench_judge workspace model bench_name:
     echo "Running MT-Bench (generation)..."
     ./just run_bench {{workspace}} {{model}} {{bench_name}}
-    echo "...Done running MT-Bench (generation)!"
-
     ./just wait_for_run_bench
+    echo "...Done running MT-Bench (generation)!"
 
     echo "Running MT-Bench (judgement)..."
     ./just run_judge {{workspace}} {{model}} {{bench_name}}
