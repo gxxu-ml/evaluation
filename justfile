@@ -98,7 +98,7 @@ run_judge workspace model bench_name:
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
-        --parallel 40 \
+        --parallel 10 \
         --yes
 
     python show_result.py --bench-name {{bench_name}}
