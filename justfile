@@ -36,8 +36,8 @@ start_local model_name model_path="":
     fi
     cd $REPO_ROOT/FastChat
     if [[ "$model_path" == ibm/* ]]; then
-        git switch kx/openai-api-hack
-        git checkout fdc7e4ec9a9ea7a9ccef1056e5b217828c9b401c
+        git switch server
+        pip install git+https://${IBM_GH_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
     else
         git switch main
     fi
