@@ -35,12 +35,12 @@ start_local model_name model_path="":
         git clone --quiet https://github.com/shivchander/FastChat.git
     fi
     cd $REPO_ROOT/FastChat
-    if [[ "$model_path" == ibm/* ]]; then
+    # if [[ "$model_path" == ibm/* ]]; then
         git switch server
         pip install git+https://${IBM_GH_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
-    else
-        git switch main
-    fi
+    # else
+    #     git switch main
+    # fi
     pip install --quiet --use-pep517 ".[model_worker]"
     # for analysis.py
     pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
