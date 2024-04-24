@@ -43,7 +43,7 @@ echo "Cloning FastChat repo..."
 git clone --quiet https://github.com/shivchander/FastChat.git 
 cd $WORKSPACE/FastChat
 git switch ibm-pr # TODO
-pip install --quiet -e .
+pip install --quiet -e ".[llm_judge]"
 pip install --quiet pandas torch transformers accelerate openai==0.28.0 anthropic
 
 echo "Injecting codes to FastChat..."
