@@ -35,7 +35,7 @@ start_local model_name model_path="":
         git clone --quiet https://github.com/shivchander/FastChat.git
     fi
     cd $REPO_ROOT/FastChat
-    if [[ "$model_path" == ibm/* ]] || [[ "{{model_name}}" =~ (merlinite|granite) ]]; then
+    if [[ "$model_path" == ibm/* ]] || [[ "$model_path" =~ (merlinite|granite) ]]; then
         git switch server
         pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
     else
