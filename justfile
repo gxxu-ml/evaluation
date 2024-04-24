@@ -2,7 +2,7 @@ projdir := justfile_directory()
 
 [private]
 default:
-    ./just --list
+    just --list
 
 link_rc model_path:
     #!/usr/bin/env bash
@@ -105,12 +105,12 @@ run_judge workspace model bench_name:
 
 run_bench_judge workspace model bench_name:
     echo "Running MT-Bench (generation)..."
-    ./just run_bench {{workspace}} {{model}} {{bench_name}}
-    ./just wait_for_run_bench
+    just run_bench {{workspace}} {{model}} {{bench_name}}
+    just wait_for_run_bench
     echo "...Done running MT-Bench (generation)!"
 
     echo "Running MT-Bench (judgement)..."
-    ./just run_judge {{workspace}} {{model}} {{bench_name}}
+    just run_judge {{workspace}} {{model}} {{bench_name}}
     echo "...Done running MT-Bench (judgement)!"
 
 quick-sync:
@@ -121,26 +121,26 @@ quick-sync:
 
 run_eval model:
     echo "Starting server for {{model}}..."
-    ./just start_local {{model}}
+    just start_local {{model}}
     echo "...Done starting server!"
 
-    ./just run_bench_judge ws-mt {{model}} mt_bench
+    just run_bench_judge ws-mt {{model}} mt_bench
 
-    ./just run_bench_judge ws-pr {{model}} pr_bench
+    just run_bench_judge ws-pr {{model}} pr_bench
 
 run_all rc_branch_name rc_model_path:
     #!/usr/bin/env bash
     echo "Evaluating current model and RC model from {{rc_model_path}}..."
 
     echo "Preparing workspaces for MT-Bench and PR-Bench..."
-    ./just prepare_bench ws-mt
-    ./just prepare_bench ws-pr {{rc_branch_name}}
+    just prepare_bench ws-mt
+    just prepare_bench ws-pr {{rc_branch_name}}
     echo "...Done reparing workspaces!"
 
-    ./just link_rc {{rc_model_path}}
+    just link_rc {{rc_model_path}}
 
     echo "Evaluating current model..."
-    ./just run_eval merlinite-7b
+    just run_eval merlinite-7b
     echo "...Done evaluating current model!"
 
     echo "Killing current model..."
@@ -148,7 +148,7 @@ run_all rc_branch_name rc_model_path:
     echo "...Done killing current model!"
 
     echo "Evaluating RC model..."
-    ./just run_eval merlinite-7b-rc
+    just run_eval merlinite-7b-rc
     echo "...Done evaluating RC model!"
 
     echo "Killing current model..."
@@ -167,14 +167,14 @@ wait_for_run_bench:
 
 run_mt model_name model_path:
     echo "Preparing workspace for MT-Bench"
-    test -d {{projdir}}/ws-mt || ./just prepare_bench ws-mt
+    test -d {{projdir}}/ws-mt || just prepare_bench ws-mt
     echo "...Done reparing workspaces!"
 
     echo "Starting server for {{model_name}} using {{model_path}}..."
-    ./just start_local {{model_name}} {{model_path}}
+    just start_local {{model_name}} {{model_path}}
     echo "...Done starting server!"
 
-    ./just run_bench_judge ws-mt {{model_name}} mt_bench
+    just run_bench_judge ws-mt {{model_name}} mt_bench
 
     echo "Killing current model..."
     pkill screen
@@ -188,5 +188,5 @@ run_mt_dir model_name model_dir:
     fns=(`ls {{model_dir}}`)
 
     for fn in "${fns[@]}"; do
-        ./just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
+        just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
