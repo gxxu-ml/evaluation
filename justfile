@@ -26,7 +26,7 @@ start_local model_name model_path="":
 
     if [ ! -d "venv" ]; then
         echo "Creating a virtual environment..."
-        python3.9 -m venv venv
+        python -m venv venv
     fi
     source venv/bin/activate
     pip install -U setuptools
