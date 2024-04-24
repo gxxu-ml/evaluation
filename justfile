@@ -41,17 +41,17 @@ start_local model_name model_path="":
     else
         git switch main
     fi
-    pip install --quiet --use-pep517 ".[model_worker]"
+    pip install --quiet -e ".[model_worker]"
     # for analysis.py
     pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
     cd $REPO_ROOT
 
-    screen -dmS controller -- python3 -m fastchat.serve.controller
+    screen -dmS controller -- python -m fastchat.serve.controller
     sleep 20
 
     for i in {0..4}
     do
-        CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python3 -m fastchat.serve.model_worker \
+        CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
             --model-path {{model_path}} \
             --model-name {{model_name}}-$i \
             --port 3100$i \
@@ -59,7 +59,7 @@ start_local model_name model_path="":
     done
     sleep 40
 
-    screen -dmS server -- python3 -m fastchat.serve.openai_api_server \
+    screen -dmS server -- python -m fastchat.serve.openai_api_server \
         --host localhost \
         --port 8000
 
