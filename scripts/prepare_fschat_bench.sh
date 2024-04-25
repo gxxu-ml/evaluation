@@ -44,6 +44,7 @@ git clone --quiet https://github.com/xukai92/FastChat.git
 cd $WORKSPACE/FastChat
 git switch ilab # TODO
 pip install --quiet -e ".[model_worker,llm_judge]"
+pip install --quiet pandas
 
 echo "Injecting codes to FastChat..."
 ln -s $REPO_ROOT/scripts/make_pr_bench.py $WORKSPACE/FastChat/fastchat/llm_judge/make_pr_bench.py 
