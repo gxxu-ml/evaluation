@@ -32,11 +32,11 @@ start_local model_name model_path="":
     pip install -U setuptools
 
     if [ ! -d "FastChat" ]; then
-        git clone --quiet https://github.com/shivchander/FastChat.git
+        git clone --quiet https://github.com/xukai92/FastChat.git
     fi
     cd $REPO_ROOT/FastChat
     if [[ "$model_path" == ibm/* ]] || [[ "$model_path" =~ (merlinite|granite) ]]; then
-        git switch server
+        git switch ilab
         pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
     else
         git switch main
@@ -183,7 +183,7 @@ run_mt model_name model_path:
     cp -r {{projdir}}/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_path}}
 
 run_mt_dir model_name model_dir:
-    #!/bin/env bash
+    #!/usr/bin/env bash
 
     fns=(`ls {{model_dir}}`)
 

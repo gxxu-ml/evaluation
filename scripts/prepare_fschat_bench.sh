@@ -40,17 +40,15 @@ else
 fi
 
 echo "Cloning FastChat repo..."
-git clone --quiet https://github.com/shivchander/FastChat.git 
+git clone --quiet https://github.com/xukai92/FastChat.git 
 cd $WORKSPACE/FastChat
-git switch ibm-pr # TODO
+git switch ilab # TODO
 pip install --quiet -e ".[llm_judge]"
 pip install --quiet pandas torch transformers accelerate openai==0.28.0 anthropic
 
 echo "Injecting codes to FastChat..."
 ln -s $REPO_ROOT/scripts/make_pr_bench.py $WORKSPACE/FastChat/fastchat/llm_judge/make_pr_bench.py 
 sed -i 's/NEED_REF_CATS = \[/NEED_REF_CATS = \["taxonomy", /g' $WORKSPACE/FastChat/fastchat/llm_judge/common.py
-sed -i 's/args = parser.parse_args()/parser.add_argument("--yes", action="store_true")\n    args = parser.parse_args()/g' $WORKSPACE/FastChat/fastchat/llm_judge/gen_judgment.py
-sed -i 's/input("Press Enter to confirm...")/if not args.yes:\n        input("Press Enter to confirm...")/g' $WORKSPACE/FastChat/fastchat/llm_judge/gen_judgment.py
 
 if [ -z "$RC_BRANCH" ]; then
     echo "Skipping PR-Bench prompt modification and data creation..."
