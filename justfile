@@ -190,3 +190,16 @@ run_mt_dir model_name model_dir:
     for fn in "${fns[@]}"; do
         just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
+
+###
+
+query model content port="8000":
+    #!/usr/bin/env bash
+
+    curl http://localhost:{{port}}/v1/chat/completions \
+        -H "Content-Type: application/json" \
+        -d '{
+            "model": "{{model_name}}",
+            "messages": [{"role": "user", "content": "{{content}}"}],
+            "max_tokens": 1024
+        }
