@@ -199,7 +199,7 @@ query model content port="8000":
     curl http://localhost:{{port}}/v1/chat/completions \
         -H "Content-Type: application/json" \
         -d '{
-            "model": "{{model_name}}",
+            "model": "{{model}}",
             "messages": [{"role": "user", "content": "{{content}}"}],
             "max_tokens": 1024
         }
