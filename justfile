@@ -52,7 +52,7 @@ start_local model_name model_path="":
     for i in {0..4}
     do
         CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
-            --model-path {{model_path}} \
+            --model-path ${model_path} \
             --model-name {{model_name}}-$i \
             --port 3100$i \
             --worker http://localhost:3100$i
