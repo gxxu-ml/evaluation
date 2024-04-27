@@ -104,14 +104,14 @@ run_judge workspace model bench_name judge_model="gpt-4":
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
-run_bench_judge workspace model bench_name:
+run_bench_judge workspace model bench_name judge_model="gpt-4":
     echo "Running MT-Bench (generation)..."
     just run_bench {{workspace}} {{model}} {{bench_name}}
     just wait_for_run_bench
     echo "...Done running MT-Bench (generation)!"
 
     echo "Running MT-Bench (judgement)..."
-    just run_judge {{workspace}} {{model}} {{bench_name}}
+    just run_judge {{workspace}} {{model}} {{bench_name}} {{judge_model}}
     echo "...Done running MT-Bench (judgement)!"
 
 quick-sync:
@@ -166,7 +166,7 @@ wait_for_run_bench:
         sleep 30
     done
 
-run_mt model_name model_path:
+run_mt model_name model_path judge_model="gpt-4":
     echo "Preparing workspace for MT-Bench"
     test -d {{projdir}}/ws-mt || just prepare_bench ws-mt
     echo "...Done reparing workspaces!"
@@ -175,7 +175,7 @@ run_mt model_name model_path:
     just start_local {{model_name}} {{model_path}}
     echo "...Done starting server!"
 
-    just run_bench_judge ws-mt {{model_name}} mt_bench
+    just run_bench_judge ws-mt {{model_name}} mt_bench {{judge_model}}
 
     echo "Killing current model..."
     pkill screen
