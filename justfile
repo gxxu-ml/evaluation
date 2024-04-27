@@ -84,7 +84,7 @@ run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
     done
     cd $REPO_ROOT
 
-run_judge workspace model bench_name:
+run_judge workspace model bench_name judge_model="gpt-4":
     #!/usr/bin/env bash
 
     REPO_ROOT=$(pwd)
@@ -98,10 +98,11 @@ run_judge workspace model bench_name:
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
+        --judge-model {{judge_model}} \
         --parallel 10 \
         --yes
 
-    python show_result.py --bench-name {{bench_name}}
+    python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
 run_bench_judge workspace model bench_name:
     echo "Running MT-Bench (generation)..."
