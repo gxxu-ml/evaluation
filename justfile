@@ -95,11 +95,17 @@ run_judge workspace model bench_name judge_model="gpt-4":
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
+    if [ "{{judge_model}}" = "gpt-4-turbo" ]; then
+        parallel=40
+    else
+        parallel=10
+    fi
+
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
         --judge-model {{judge_model}} \
-        --parallel 10 \
+        --parallel $parallel \
         --yes
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
@@ -203,4 +209,4 @@ query model content port="8000":
             "model": "{{model}}",
             "messages": [{"role": "user", "content": "{{content}}"}],
             "max_tokens": 1024
-        }
+        }'
