@@ -204,6 +204,8 @@ wait_for_run_bench:
     done
 
 run_mt model_name model_path max_worker_id="4" judge_model="gpt-4":
+    echo "Running with CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+
     echo "Preparing workspace for MT-Bench"
     test -d {{projdir}}/ws-mt || just prepare_bench ws-mt
     echo "...Done reparing workspaces!"
@@ -248,7 +250,7 @@ run_mt_dir_parallel_core model_name model_dir every="1":
             cuda_device = Threads.threadid() - 1
             withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
                 cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
-                @info "running" cmd
+                @info "running" cuda_device cmd
                 run(cmd)
             end
         end
