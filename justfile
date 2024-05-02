@@ -241,10 +241,6 @@ run_mt_dir_parallel_core model_name model_dir every="1":
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
-    run(`screen -dmS controller -- python -m fastchat.serve.controller`)
-    run(`screen -dmS server -- python -m fastchat.serve.openai_api_server \
-            --host localhost \
-            --port 8000`)
     Threads.@threads for fn in fns
         m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
