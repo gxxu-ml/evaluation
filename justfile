@@ -48,7 +48,7 @@ start_local model_name model_path="" max_worker_id="4":
     pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
     cd $REPO_ROOT
 
-    if [ $(screen -ls | grep controller | wc -l) -eq 0 ]
+    if [ $(screen -ls | grep controller | wc -l) -eq 0 ]; then
         screen -dmS controller -- python -m fastchat.serve.controller
         sleep 20
     fi
@@ -72,7 +72,7 @@ start_local model_name model_path="" max_worker_id="4":
         done
     fi
 
-    if [ $(screen -ls | grep server | wc -l) -eq 0 ]
+    if [ $(screen -ls | grep server | wc -l) -eq 0 ]; then
         sleep 40
         screen -dmS server -- python -m fastchat.serve.openai_api_server \
             --host localhost \
