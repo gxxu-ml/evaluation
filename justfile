@@ -225,7 +225,7 @@ run_mt_dir_parallel model_name model_dir:
     model_name = {{model_name}}
     fns = readdir("{{model_dir}}")
     Threads.@threads for fn in fns
-        num_samples = fn
+        num_samples = parse(Int, match(r"samples_\d+", fn).match[1])
         cuda_device = Threads.threadid() - 1
         withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
             cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
