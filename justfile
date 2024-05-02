@@ -50,9 +50,9 @@ start_local model_name model_path="" max_worker_id="4":
 
     if [ $(screen -ls | grep controller | wc -l) -eq 0 ]; then
         screen -dmS controller -- python -m fastchat.serve.controller
-        sleep 20
     fi
 
+    sleep 20
     if [ {{max_worker_id}} -eq 0 ]; then
         i={{max_worker_id}}
         # assuming CUDA_VISIBLE_DEVICES is set to only 1 number
@@ -71,9 +71,9 @@ start_local model_name model_path="" max_worker_id="4":
                 --worker http://localhost:3100$i
         done
     fi
+    sleep 40
 
     if [ $(screen -ls | grep server | wc -l) -eq 0 ]; then
-        sleep 40
         screen -dmS server -- python -m fastchat.serve.openai_api_server \
             --host localhost \
             --port 8000
@@ -241,6 +241,10 @@ run_mt_dir_parallel_core model_name model_dir every="1":
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
+    run(`screen -dmS controller -- python -m fastchat.serve.controller`)
+    run(`screen -dmS server -- python -m fastchat.serve.openai_api_server \
+            --host localhost \
+            --port 8000`)
     Threads.@threads for fn in fns
         m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
