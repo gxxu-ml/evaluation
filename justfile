@@ -90,14 +90,23 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    for i in {0..{{max_worker_id}}}
-    do
-        OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$i -- python gen_api_answer.py \
+    if [ $max_worker_id -eq 0 ]; then
+        i=$max_worker_id
+        OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$CUDA_VISIBLE_DEVICES -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
             --openai-api-base {{endpoint}} \
             --model "{{model}}-$i" \
             --num-choices 1
-    done
+    else
+        for i in {0..{{max_worker_id}}}
+        do
+            OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$i -- python gen_api_answer.py \
+                --bench-name {{bench_name}} \
+                --openai-api-base {{endpoint}} \
+                --model "{{model}}-$i" \
+                --num-choices 1
+        done
+    fi
     cd $REPO_ROOT
 
 run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
