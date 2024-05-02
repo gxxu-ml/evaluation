@@ -53,10 +53,10 @@ start_local model_name model_path="" max_worker_id="4":
     fi
 
     sleep 20
-    if [ {{max_worker_id}} -eq 0 ]; then
+    if [[ {{max_worker_id}} == "0" ]]; then
         i={{max_worker_id}}
         # assuming CUDA_VISIBLE_DEVICES is set to only 1 number
-        screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
+        screen -dmS worker-$CUDA_VISIBLE_DEVICES -- python -m fastchat.serve.model_worker \
                 --model-path ${model_path} \
                 --model-name {{model_name}}-$i \
                 --port 3100$CUDA_VISIBLE_DEVICES \
@@ -90,7 +90,7 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    if [ {{max_worker_id}} -eq 0 ]; then
+    if [[ {{max_worker_id}} == "0" ]]; then
         i={{max_worker_id}}
         OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$CUDA_VISIBLE_DEVICES -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
