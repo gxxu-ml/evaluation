@@ -54,11 +54,10 @@ start_local model_name model_path="" max_worker_id="4":
 
     sleep 20
     if [[ {{max_worker_id}} == "0" ]]; then
-        i={{max_worker_id}}
         # assuming CUDA_VISIBLE_DEVICES is set to only 1 number
         screen -dmS worker-$CUDA_VISIBLE_DEVICES -- python -m fastchat.serve.model_worker \
                 --model-path ${model_path} \
-                --model-name {{model_name}}-$i \
+                --model-name {{model_name}} \
                 --port 3100$CUDA_VISIBLE_DEVICES \
                 --worker http://localhost:3100$CUDA_VISIBLE_DEVICES
     else
@@ -91,11 +90,10 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
     if [[ {{max_worker_id}} == "0" ]]; then
-        i={{max_worker_id}}
         OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$CUDA_VISIBLE_DEVICES -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
             --openai-api-base {{endpoint}} \
-            --model "{{model}}-$i" \
+            --model "{{model}}" \
             --num-choices 1
     else
         for i in {0..{{max_worker_id}}}
@@ -125,12 +123,16 @@ run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     else
         parallel=10
     fi
-
+    
     model_list=""
-    for i in $(seq 0 {{max_worker_id}})
-    do
-        model_list+="{{model}}-$i "
-    done
+    if [[ {{max_worker_id}} == "0" ]]; then
+        for i in $(seq 0 {{max_worker_id}})
+        do
+            model_list+="{{model}}-$i "
+        done
+    else
+        model_list+="{{model}}"
+    fi
 
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
