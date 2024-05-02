@@ -224,7 +224,7 @@ run_mt_dir_parallel_precheck model_name model_dir every:
     #!/usr/bin/env julia
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
-    println("$(len(fns)) checkpoints to process...")
+    println("$(length(fns)) checkpoints to process...")
 
 run_mt_dir_parallel model_name model_dir every="1": (run_mt_dir_parallel_precheck model_name model_dir every)
     #!/usr/bin/env -S julia -t 8
@@ -232,12 +232,15 @@ run_mt_dir_parallel model_name model_dir every="1": (run_mt_dir_parallel_prechec
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
     Threads.@threads for fn in fns
-        num_samples = parse(Int, match(r"samples_\d+", fn)[1])
-        cuda_device = Threads.threadid() - 1
-        withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
-            cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
-            @info "running" cmd
-            run(cmd)
+        m = match(r"samples_\d+", fn)
+        if !isnothing(m)
+            num_samples = parse(Int, m[1])
+            cuda_device = Threads.threadid() - 1
+            withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
+                cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
+                @info "running" cmd
+                run(cmd)
+            end
         end
     end
 
