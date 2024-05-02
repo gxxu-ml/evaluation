@@ -14,7 +14,7 @@ link_rc model_path:
 prepare_bench *args:
     ./scripts/prepare_fschat_bench.sh {{args}}
 
-start_local model_name model_path="":
+start_local model_name model_path="" max_worker_id="4":
     #!/usr/bin/env bash
     REPO_ROOT=$(pwd)
 
@@ -27,9 +27,11 @@ start_local model_name model_path="":
     if [ ! -d "venv" ]; then
         echo "Creating a virtual environment..."
         python -m venv venv
+        source venv/bin/activate
+        pip install -U setuptools
+    else
+        source venv/bin/activate
     fi
-    source venv/bin/activate
-    pip install -U setuptools
 
     if [ ! -d "FastChat" ]; then
         git clone --quiet https://github.com/xukai92/FastChat.git
@@ -46,24 +48,38 @@ start_local model_name model_path="":
     pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
     cd $REPO_ROOT
 
-    screen -dmS controller -- python -m fastchat.serve.controller
-    sleep 20
+    if [ $(screen -ls | grep controller | wc -l) -eq 0 ]
+        screen -dmS controller -- python -m fastchat.serve.controller
+        sleep 20
+    fi
 
-    for i in {0..4}
-    do
-        CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
-            --model-path ${model_path} \
-            --model-name {{model_name}}-$i \
-            --port 3100$i \
-            --worker http://localhost:3100$i
-    done
-    sleep 40
+    if [ $max_worker_id -eq 0 ]; then
+        i=$max_worker_id
+        # assuming CUDA_VISIBLE_DEVICES is set to only 1 number
+        screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
+                --model-path ${model_path} \
+                --model-name {{model_name}}-$i \
+                --port 3100$CUDA_VISIBLE_DEVICES \
+                --worker http://localhost:3100$CUDA_VISIBLE_DEVICES
+    else
+        for i in {0..{{max_worker_id}}}
+        do
+            CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
+                --model-path ${model_path} \
+                --model-name {{model_name}}-$i \
+                --port 3100$i \
+                --worker http://localhost:3100$i
+        done
+    fi
 
-    screen -dmS server -- python -m fastchat.serve.openai_api_server \
-        --host localhost \
-        --port 8000
+    if [ $(screen -ls | grep server | wc -l) -eq 0 ]
+        sleep 40
+        screen -dmS server -- python -m fastchat.serve.openai_api_server \
+            --host localhost \
+            --port 8000
+    fi
 
-run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
+run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhost:8000/v1":
     #!/usr/bin/env bash
 
     REPO_ROOT=$(pwd)
@@ -74,7 +90,7 @@ run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    for i in {0..4}
+    for i in {0..{{max_worker_id}}}
     do
         OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$i -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
@@ -84,7 +100,7 @@ run_bench workspace model bench_name endpoint="http://localhost:8000/v1":
     done
     cd $REPO_ROOT
 
-run_judge workspace model bench_name judge_model="gpt-4":
+run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     #!/usr/bin/env bash
 
     REPO_ROOT=$(pwd)
@@ -101,23 +117,29 @@ run_judge workspace model bench_name judge_model="gpt-4":
         parallel=10
     fi
 
+    model_list=""
+    for i in $(seq 0 {{max_worker_id}})
+    do
+        model_list+="{{model}}-$i "
+    done
+
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
-        --model-list "{{model}}-0" "{{model}}-1" "{{model}}-2" "{{model}}-3" "{{model}}-4" \
+        --model-list $model_list \
         --judge-model {{judge_model}} \
         --parallel $parallel \
         --yes
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
-run_bench_judge workspace model bench_name judge_model="gpt-4":
+run_bench_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     echo "Running MT-Bench (generation)..."
-    just run_bench {{workspace}} {{model}} {{bench_name}}
+    just run_bench {{workspace}} {{model}} {{bench_name}} {{max_worker_id}}
     just wait_for_run_bench
     echo "...Done running MT-Bench (generation)!"
 
     echo "Running MT-Bench (judgement)..."
-    just run_judge {{workspace}} {{model}} {{bench_name}} {{judge_model}}
+    just run_judge {{workspace}} {{model}} {{bench_name}} {{max_worker_id}} {{judge_model}}
     echo "...Done running MT-Bench (judgement)!"
 
 quick-sync:
@@ -172,16 +194,16 @@ wait_for_run_bench:
         sleep 30
     done
 
-run_mt model_name model_path judge_model="gpt-4":
+run_mt model_name model_path max_worker_id="4" judge_model="gpt-4":
     echo "Preparing workspace for MT-Bench"
     test -d {{projdir}}/ws-mt || just prepare_bench ws-mt
     echo "...Done reparing workspaces!"
 
     echo "Starting server for {{model_name}} using {{model_path}}..."
-    just start_local {{model_name}} {{model_path}}
+    just start_local {{model_name}} {{model_path}} {{max_worker_id}}
     echo "...Done starting server!"
 
-    just run_bench_judge ws-mt {{model_name}} mt_bench {{judge_model}}
+    just run_bench_judge ws-mt {{model_name}} mt_bench {{max_worker_id}} {{judge_model}}
 
     echo "Killing current model..."
     pkill screen
@@ -197,6 +219,20 @@ run_mt_dir model_name model_dir:
     for fn in "${fns[@]}"; do
         just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
+
+run_mt_dir_parallel model_name model_dir:
+    #!/usr/bin/env julia -t 8
+    model_name = {{model_name}}
+    fns = readdir("{{model_dir}}")
+    Threads.@threads for fn in fns
+        num_samples = fn
+        cuda_device = Threads.threadid() - 1
+        withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
+            cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
+            @info "running" cmd
+            run(cmd)
+        end
+    end
 
 ###
 
