@@ -120,7 +120,7 @@ run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
-    if [ "{{judge_model}}" = "gpt-4-turbo" ]; then
+    if [ "{{judge_model}}" == "gpt-4-turbo" ]; then
         parallel=40
     else
         parallel=10
@@ -203,7 +203,11 @@ wait_for_run_bench:
         sleep 30
     done
 
-run_mt model_name model_path max_worker_id="4" judge_model="gpt-4":
+run_mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices="":
+    #!/usr/bin/env bash
+    if [[ ! {{cuda_devices}} == "" ]]; then
+        export CUDA_VISIBLE_DEVICES={{cuda_devices}}
+    fi
     echo "Running with CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
     echo "Preparing workspace for MT-Bench"
@@ -247,12 +251,10 @@ run_mt_dir_parallel_core model_name model_dir every="1":
         m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
             num_samples = parse(Int, m[1])
-            cuda_device = Threads.threadid() - 1
-            withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
-                cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0`
-                @info "running" cuda_device cmd
-                run(cmd)
-            end
+            cuda_dev = Threads.threadid() - 1
+            cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0 gpt-4 $cuda_dev`
+            @info "running" cuda_dev cmd
+            run(cmd)
         end
     end
 
