@@ -232,7 +232,7 @@ run_mt_dir_parallel model_name model_dir every="1": (run_mt_dir_parallel_prechec
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
     Threads.@threads for fn in fns
-        m = match(r"samples_\d+", fn)
+        m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
             num_samples = parse(Int, m[1])
             cuda_device = Threads.threadid() - 1
