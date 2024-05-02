@@ -224,7 +224,16 @@ run_mt_dir_parallel model_name model_dir every="1":
     #!/usr/bin/env -S julia -t 8
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
-    Threads.@threads for fn in fns[1:{{every}}:end]
+    fns = collect(fns[1:{{every}}:end])
+
+    println("$(len(fns)) checkpoints to process...")
+    println("Do you want to proceed? (y/N)")
+    answer = readline()
+    if !(lowercase(answer) == "y")
+        exit()
+    end
+    
+    Threads.@threads for fn in fns
         num_samples = parse(Int, match(r"samples_\d+", fn)[1])
         cuda_device = Threads.threadid() - 1
         withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
