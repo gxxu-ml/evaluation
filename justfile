@@ -220,11 +220,11 @@ run_mt_dir model_name model_dir:
         just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
 
-run_mt_dir_parallel model_name model_dir:
+run_mt_dir_parallel model_name model_dir every="1":
     #!/usr/bin/env -S julia -t 8
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
-    Threads.@threads for fn in fns
+    Threads.@threads for fn in fns[1:{{every}}:end]
         num_samples = parse(Int, match(r"samples_\d+", fn)[1])
         cuda_device = Threads.threadid() - 1
         withenv("CUDA_VISIBLE_DEVICES" => string(cuda_device)) do
