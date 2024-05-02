@@ -226,6 +226,7 @@ run_mt_dir_parallel_precheck model_name model_dir every:
     fns = collect(fns[1:{{every}}:end])
     println("$(length(fns)) checkpoints to process...")
 
+[confirm]
 run_mt_dir_parallel model_name model_dir every="1": (run_mt_dir_parallel_precheck model_name model_dir every)
     #!/usr/bin/env -S julia -t 8
     model_name = "{{model_name}}"
