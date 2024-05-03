@@ -126,12 +126,12 @@ run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     
     model_list=""
     if [[ {{max_worker_id}} == "0" ]]; then
+        model_list+="{{model}}"
+    else
         for i in $(seq 0 {{max_worker_id}})
         do
             model_list+="{{model}}-$i "
         done
-    else
-        model_list+="{{model}}"
     fi
 
     OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
