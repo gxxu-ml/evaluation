@@ -207,7 +207,7 @@ wait_for_run_bench:
 
 run_mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices="":
     #!/usr/bin/env bash
-    if [[ ! {{cuda_devices}} == "" ]]; then
+    if [[ ! "{{cuda_devices}}" == "" ]]; then
         export CUDA_VISIBLE_DEVICES={{cuda_devices}}
     fi
     echo "Running with CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
