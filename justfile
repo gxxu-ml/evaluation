@@ -35,13 +35,13 @@ prepare_local model_path:
     cd $REPO_ROOT/FastChat
     if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
         git switch ilab
-        if [[ "$installed" == "0" ]]
+        if [[ "$installed" == "0" ]]; then
             pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
         fi
     else
         git switch main
     fi
-    if [[ "$installed" == "0" ]]
+    if [[ "$installed" == "0" ]]; then
         pip install --quiet -e ".[model_worker]"
         # for analysis.py
         pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
