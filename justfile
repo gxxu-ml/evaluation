@@ -16,6 +16,8 @@ prepare_bench *args:
 
 prepare_local model_path:
     #!/usr/bin/env bash
+    REPO_ROOT=$(pwd)
+
     if [ ! -d "venv" ]; then
         echo "Creating a virtual environment..."
         python -m venv venv
