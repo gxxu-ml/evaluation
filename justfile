@@ -31,20 +31,20 @@ prepare_local model_path:
 
     if [ ! -d "FastChat" ]; then
         git clone --quiet https://github.com/xukai92/FastChat.git
-    fi
-    cd $REPO_ROOT/FastChat
-    if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
-        git switch ilab
-        if [[ "$installed" == "0" ]]; then
-            pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
+        cd $REPO_ROOT/FastChat
+        if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
+            git switch ilab
+            if [[ "$installed" == "0" ]]; then
+                pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
+            fi
+        else
+            git switch main
         fi
-    else
-        git switch main
-    fi
-    if [[ "$installed" == "0" ]]; then
-        pip install --quiet -e ".[model_worker]"
-        # for analysis.py
-        pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
+        if [[ "$installed" == "0" ]]; then
+            pip install --quiet -e ".[model_worker]"
+            # for analysis.py
+            pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
+        fi
     fi
 
 start_local model_name model_path="" max_worker_id="4":
