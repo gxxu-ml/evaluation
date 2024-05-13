@@ -23,10 +23,6 @@ prepare_local model_path:
         python -m venv venv
         source venv/bin/activate
         pip install -U setuptools
-        installed=0
-    else
-        source venv/bin/activate
-        installed=1
     fi
 
     if [ ! -d "FastChat" ]; then
@@ -34,17 +30,12 @@ prepare_local model_path:
         cd $REPO_ROOT/FastChat
         if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
             git switch ilab
-            if [[ "$installed" == "0" ]]; then
-                pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
-            fi
+            pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
         else
             git switch main
         fi
-        if [[ "$installed" == "0" ]]; then
-            pip install --quiet -e ".[model_worker]"
-            # for analysis.py
-            pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
-        fi
+        pip install --quiet -e ".[model_worker]"
+        pip install wandb matplotlib pandas pygithub ibmcloudant tenacity # for analysis.py
     fi
 
 start_local model_name model_path="" max_worker_id="4":
@@ -58,6 +49,7 @@ start_local model_name model_path="" max_worker_id="4":
     fi
 
     just prepare_local $model_path
+    source venv/bin/activate
     
     cd $REPO_ROOT
 
