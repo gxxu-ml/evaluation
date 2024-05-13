@@ -14,6 +14,37 @@ link_rc model_path:
 prepare_bench *args:
     ./scripts/prepare_fschat_bench.sh {{args}}
 
+prepare_local model_path:
+    #!/usr/bin/env bash
+    if [ ! -d "venv" ]; then
+        echo "Creating a virtual environment..."
+        python -m venv venv
+        source venv/bin/activate
+        pip install -U setuptools
+        installed=0
+    else
+        source venv/bin/activate
+        installed=1
+    fi
+
+    if [ ! -d "FastChat" ]; then
+        git clone --quiet https://github.com/xukai92/FastChat.git
+    fi
+    cd $REPO_ROOT/FastChat
+    if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
+        git switch ilab
+        if [[ "$installed" == "0" ]]
+            pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
+        fi
+    else
+        git switch main
+    fi
+    if [[ "$installed" == "0" ]]
+        pip install --quiet -e ".[model_worker]"
+        # for analysis.py
+        pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
+    fi
+
 start_local model_name model_path="" max_worker_id="4":
     #!/usr/bin/env bash
     REPO_ROOT=$(pwd)
@@ -24,28 +55,8 @@ start_local model_name model_path="" max_worker_id="4":
         model_path={{model_path}}
     fi
 
-    if [ ! -d "venv" ]; then
-        echo "Creating a virtual environment..."
-        python -m venv venv
-        source venv/bin/activate
-        pip install -U setuptools
-    else
-        source venv/bin/activate
-    fi
-
-    if [ ! -d "FastChat" ]; then
-        git clone --quiet https://github.com/xukai92/FastChat.git
-    fi
-    cd $REPO_ROOT/FastChat
-    if [[ "$model_path" == ibm/* ]] || [[ "$model_path" =~ (merlinite|granite) ]]; then
-        git switch ilab
-        pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
-    else
-        git switch main
-    fi
-    pip install --quiet -e ".[model_worker]"
-    # for analysis.py
-    pip install wandb matplotlib pandas pygithub ibmcloudant tenacity
+    just prepare_local $model_path
+    
     cd $REPO_ROOT
 
     if [ $(screen -ls | grep controller | wc -l) -eq 0 ]; then
@@ -246,9 +257,11 @@ run_mt_dir_parallel model_name model_dir every="1": && (run_mt_dir_parallel_core
 [confirm]
 run_mt_dir_parallel_core model_name model_dir every="1": 
     #!/usr/bin/env -S julia -t 8
+    run(`just prepare_bench ws-mt`) # init bench venv for all
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
+    run(`just prepare_local {{model_dir}}/$(fns[1])`) # init worker venv for all
     Threads.@threads for fn in fns
         m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
