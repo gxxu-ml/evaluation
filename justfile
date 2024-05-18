@@ -95,7 +95,7 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
     cd $WORKSPACE/FastChat/fastchat/llm_judge
 
     if [[ {{max_worker_id}} == "0" ]]; then
-        OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$CUDA_VISIBLE_DEVICES -- python gen_api_answer.py \
+        OPENAI_API_KEY="NO_API_KEY" screen -dmS bench-$CUDA_VISIBLE_DEVICES -- python gen_api_answer.py \
             --bench-name {{bench_name}} \
             --openai-api-base {{endpoint}} \
             --model "{{model}}" \
@@ -103,7 +103,7 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
     else
         for i in {0..{{max_worker_id}}}
         do
-            OPENAI_API_KEY="NO_API_KEY" screen -dmS run-bench-$i -- python gen_api_answer.py \
+            OPENAI_API_KEY="NO_API_KEY" screen -dmS bench-$i -- python gen_api_answer.py \
                 --bench-name {{bench_name}} \
                 --openai-api-base {{endpoint}} \
                 --model "{{model}}-$i" \
@@ -222,7 +222,7 @@ run_all rc_branch_name rc_model_path:
 
 wait_for_run_bench:
     #!/usr/bin/env bash
-    while [ $(screen -ls | grep run-bench | wc -l) -ne 0 ]
+    while [ $(screen -ls | grep bench | wc -l) -ne 0 ]
     do
         echo "Still running run_bench.."
         sleep 30
