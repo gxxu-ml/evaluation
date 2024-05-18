@@ -4,17 +4,17 @@ projdir := justfile_directory()
 default:
     just --list
 
-link_rc model_path:
+link-rc model_path:
     #!/usr/bin/env bash
     if [ ! -d {{projdir / "ibm"}} ]; then
         mkdir {{projdir / "ibm"}}
     fi
     ln -s {{model_path}} {{projdir / "ibm" / "merlinite-7b-rc"}}
 
-prepare_bench *args:
+prepare-bench *args:
     ./scripts/prepare_fschat_bench.sh {{args}}
 
-prepare_local model_path:
+prepare-local model_path:
     #!/usr/bin/env bash
     REPO_ROOT=$(pwd)
 
@@ -38,7 +38,7 @@ prepare_local model_path:
         pip install wandb matplotlib pandas pygithub ibmcloudant tenacity # for analysis.py
     fi
 
-start_local model_name model_path="" max_worker_id="4":
+start-local model_name model_path="" max_worker_id="4":
     #!/usr/bin/env bash
     REPO_ROOT=$(pwd)
 
@@ -48,7 +48,7 @@ start_local model_name model_path="" max_worker_id="4":
         model_path={{model_path}}
     fi
 
-    just prepare_local $model_path
+    just prepare-local $model_path
     source venv/bin/activate
     
     cd $REPO_ROOT
@@ -83,7 +83,7 @@ start_local model_name model_path="" max_worker_id="4":
             --port 8000
     fi
 
-run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhost:8000/v1":
+run-bench workspace model bench_name max_worker_id="4" endpoint="http://localhost:8000/v1":
     #!/usr/bin/env bash
 
     REPO_ROOT=$(pwd)
@@ -112,7 +112,7 @@ run_bench workspace model bench_name max_worker_id="4" endpoint="http://localhos
     fi
     cd $REPO_ROOT
 
-run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
+run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     #!/usr/bin/env bash
 
     REPO_ROOT=$(pwd)
@@ -166,14 +166,14 @@ run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
-run_bench_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
+run-bench-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     echo "Running MT-Bench (generation)..."
-    just run_bench {{workspace}} {{model}} {{bench_name}} {{max_worker_id}}
-    just wait_for_run_bench
+    just run-bench {{workspace}} {{model}} {{bench_name}} {{max_worker_id}}
+    just wait-for-run-bench
     echo "...Done running MT-Bench (generation)!"
 
     echo "Running MT-Bench (judgement)..."
-    just run_judge {{workspace}} {{model}} {{bench_name}} {{max_worker_id}} {{judge_model}}
+    just run-judge {{workspace}} {{model}} {{bench_name}} {{max_worker_id}} {{judge_model}}
     echo "...Done running MT-Bench (judgement)!"
 
 quick-sync:
@@ -182,28 +182,28 @@ quick-sync:
     git commit -m "quick sync"
     git push
 
-run_eval model:
+run-eval model:
     echo "Starting server for {{model}}..."
-    just start_local {{model}}
+    just start-local {{model}}
     echo "...Done starting server!"
 
-    just run_bench_judge ws-mt {{model}} mt_bench
+    just run-bench-judge ws-mt {{model}} mt_bench
 
-    just run_bench_judge ws-pr {{model}} pr_bench
+    just run-bench-judge ws-pr {{model}} pr_bench
 
-run_all rc_branch_name rc_model_path:
+run-all rc_branch_name rc_model_path:
     #!/usr/bin/env bash
     echo "Evaluating current model and RC model from {{rc_model_path}}..."
 
     echo "Preparing workspaces for MT-Bench and PR-Bench..."
-    just prepare_bench ws-mt
-    just prepare_bench ws-pr {{rc_branch_name}}
+    just prepare-bench ws-mt
+    just prepare-bench ws-pr {{rc_branch_name}}
     echo "...Done reparing workspaces!"
 
-    just link_rc {{rc_model_path}}
+    just link-rc {{rc_model_path}}
 
     echo "Evaluating current model..."
-    just run_eval merlinite-7b
+    just run-eval merlinite-7b
     echo "...Done evaluating current model!"
 
     echo "Killing current model..."
@@ -211,7 +211,7 @@ run_all rc_branch_name rc_model_path:
     echo "...Done killing current model!"
 
     echo "Evaluating RC model..."
-    just run_eval merlinite-7b-rc
+    just run-eval merlinite-7b-rc
     echo "...Done evaluating RC model!"
 
     echo "Killing current model..."
@@ -220,15 +220,15 @@ run_all rc_branch_name rc_model_path:
     
     echo "...Done evaluating current model and RC model!"
 
-wait_for_run_bench:
+wait-for-run-bench:
     #!/usr/bin/env bash
     while [ $(screen -ls | grep bench | wc -l) -ne 0 ]
     do
-        echo "Still running run_bench.."
+        echo "Still running run-bench.."
         sleep 30
     done
 
-run_mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices="":
+run-mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices="":
     #!/usr/bin/env bash
     if [[ ! "{{cuda_devices}}" == "" ]]; then
         export CUDA_VISIBLE_DEVICES={{cuda_devices}}
@@ -236,14 +236,14 @@ run_mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices=
     echo "Running with CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
     echo "Preparing workspace for MT-Bench"
-    test -d {{projdir}}/ws-mt || just prepare_bench ws-mt
+    test -d {{projdir}}/ws-mt || just prepare-bench ws-mt
     echo "...Done reparing workspaces!"
 
     echo "Starting server for {{model_name}} using {{model_path}}..."
-    just start_local {{model_name}} {{model_path}} {{max_worker_id}}
+    just start-local {{model_name}} {{model_path}} {{max_worker_id}}
     echo "...Done starting server!"
 
-    just run_bench_judge ws-mt {{model_name}} mt_bench {{max_worker_id}} {{judge_model}}
+    just run-bench-judge ws-mt {{model_name}} mt_bench {{max_worker_id}} {{judge_model}}
 
     echo "Killing current model..."
     pkill screen
@@ -251,35 +251,35 @@ run_mt model_name model_path max_worker_id="4" judge_model="gpt-4" cuda_devices=
 
     cp -r {{projdir}}/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_path}}
 
-run_mt_dir model_name model_dir:
+run-mt-dir model_name model_dir:
     #!/usr/bin/env bash
 
     fns=(`ls {{model_dir}}`)
 
     for fn in "${fns[@]}"; do
-        just run_mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
+        just run-mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
 
-run_mt_dir_parallel model_name model_dir every="1": && (run_mt_dir_parallel_core model_name model_dir every)
+run-mt-dir-parallel model_name model_dir every="1": && (run-mt-dir-parallel-core model_name model_dir every)
     #!/usr/bin/env julia
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
     println("$(length(fns)) checkpoints to process...")
 
 [confirm]
-run_mt_dir_parallel_core model_name model_dir every="1": 
+run-mt-dir-parallel-core model_name model_dir every="1": 
     #!/usr/bin/env -S julia -t 8
-    run(`just prepare_bench ws-mt`) # init bench venv for all
+    run(`just prepare-bench ws-mt`) # init bench venv for all
     model_name = "{{model_name}}"
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
-    run(`just prepare_local {{model_dir}}/$(fns[1])`) # init worker venv for all
+    run(`just prepare-local {{model_dir}}/$(fns[1])`) # init worker venv for all
     Threads.@threads for fn in fns
         m = match(r"samples_(\d+)", fn)
         if !isnothing(m)
             num_samples = parse(Int, m[1])
             cuda_dev = Threads.threadid() - 1
-            cmd = `just run_mt $model_name-$num_samples {{model_dir}}/$fn 0 gpt-4 $cuda_dev`
+            cmd = `just run-mt $model_name-$num_samples {{model_dir}}/$fn 0 gpt-4 $cuda_dev`
             @info "running" cuda_dev cmd
             run(cmd)
         end
