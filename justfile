@@ -139,12 +139,30 @@ run_judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
         done
     fi
 
-    OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
+    if [ "$BATCH_MTB" == "1" ]; then
+        OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
+            --bench-name {{bench_name}} \
+            --model-list $model_list \
+            --judge-model {{judge_model}} \
+            --batch \
+            --yes
+
+        /home/lab/.conda/envs/ilab/bin/python submit_and_wait_batch.py data/mt_bench/model_judgment/gpt-4_single-batch.jsonl data/mt_bench/model_judgment/gpt-4_single-batch-output.jsonl
+
+        OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
+            --bench-name {{bench_name}} \
+            --model-list $model_list \
+            --judge-model {{judge_model}} \
+            --batch \
+            --yes
+    else
+        OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list $model_list \
         --judge-model {{judge_model}} \
         --parallel $parallel \
         --yes
+    fi
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
