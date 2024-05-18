@@ -139,7 +139,7 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
         done
     fi
 
-    if [ "$BATCH_MTB" == "1" ]; then
+    if [ -z "$EVAL_OAI_BATCH" ] || [ "$EVAL_OAI_BATCH" != "0" ]; then
         OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
             --bench-name {{bench_name}} \
             --model-list $model_list \
