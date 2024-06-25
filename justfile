@@ -156,12 +156,23 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
             --batch \
             --yes
     else
-        OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
-        --bench-name {{bench_name}} \
-        --model-list $model_list \
-        --judge-model {{judge_model}} \
-        --parallel $parallel \
-        --yes
+        if [ -z "$EVAL_OAI_P2" ] || [ "$EVAL_OAI_P2" != "0" ]; then
+            just vllm-p2
+
+            OPENAI_API_BASE=http://0.0.0.0:8080/v1 OPENAI_API_KEY=NO_API_KEY ILAB_EVAL_MERGE_SYS_USR=1 python gen_judgment.py \
+            --bench-name {{bench_name}} \
+            --model-list $model_list \
+            --judge-model {{judge_model}} \
+            --parallel $parallel \
+            --yes
+        else
+            OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
+            --bench-name {{bench_name}} \
+            --model-list $model_list \
+            --judge-model {{judge_model}} \
+            --parallel $parallel \
+            --yes
+        fi
     fi
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
@@ -284,6 +295,24 @@ run-mt-dir-parallel-core model_name model_dir every="1":
             run(cmd)
         end
     end
+
+vllm-p2 port="8080":
+    #!/usr/bin/env bash
+
+    export PATH="${HOME}/.conda/envs/vllm/bin:${PATH}"
+
+    if ! ray status > /dev/null 2>&1; then
+        ray start --head --num-cpus=32 --num-gpus=8 --disable-usage-stats
+    else
+        echo "Ray server is already running..."
+    fi
+
+    python -m vllm.entrypoints.openai.api_server \
+        --port {{port}} \
+        --model prometheus-eval/prometheus-8x7b-v2.0 \
+        --dtype float16 \
+        --tensor-parallel-size 8 \
+        --served-model-name gpt-4
 
 ###
 
