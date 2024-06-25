@@ -157,6 +157,8 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
             --yes
     else
         if [ -z "$EVAL_USE_P2" ] || [ "$EVAL_USE_P2" != "0" ]; then
+            pkill screen
+            
             just vllm-p2
 
             OPENAI_API_BASE=http://0.0.0.0:8080/v1 OPENAI_API_KEY=NO_API_KEY ILAB_EVAL_MERGE_SYS_USR=1 python gen_judgment.py \
