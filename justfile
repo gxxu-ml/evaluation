@@ -274,30 +274,108 @@ run-mt-dir model_name model_dir:
         just run-mt {{model_name}}-${fn##*_} {{model_dir}}/$fn
     done
 
-run-mt-dir-parallel model_name model_dir every="1": && (run-mt-dir-parallel-core model_name model_dir every)
+
+start-local-batch model_name_ls:
+    #!/usr/bin/env bash
+    REPO_ROOT=$(pwd)
+
+    IFS=',' read -r -a model_names <<< {{model_name_ls}}
+    
+    just prepare-local "ibm/${model_names[$i]}"
+    source venv/bin/activate
+
+    cd $REPO_ROOT
+
+    if [ $(screen -ls | grep controller | wc -l) -eq 0 ]; then
+        screen -dmS controller -- python -m fastchat.serve.controller
+    fi
+
+    sleep 20
+
+    for i in "${!model_names[@]}";
+    do
+        echo "ibm/${model_names[$i]}"
+        CUDA_VISIBLE_DEVICES=$i screen -dmS worker-$i -- python -m fastchat.serve.model_worker \
+            --model-path "ibm/${model_names[$i]}" \
+            --model-name ${model_names[$i]} \
+            --port 3100$i \
+            --worker http://localhost:3100$i
+    done
+
+    sleep 40
+
+    if [ $(screen -ls | grep server | wc -l) -eq 0 ]; then
+        screen -dmS server -- python -m fastchat.serve.openai_api_server \
+            --host localhost \
+            --port 8000
+    fi
+
+run-bench-batch model_name_ls workspace="ws-mt" bench_name="mt_bench" endpoint="http://localhost:8000/v1":
+    #!/usr/bin/env bash
+    test -d {{projdir}}/{{workspace}} || just prepare-bench {{workspace}}
+    IFS=',' read -r -a model_names <<< {{model_name_ls}}
+
+    REPO_ROOT=$(pwd)
+    WORKSPACE=$(realpath {{workspace}})
+
+    cd $WORKSPACE
+    source venv/bin/activate
+    
+    cd $WORKSPACE/FastChat/fastchat/llm_judge
+
+    for i in "${!model_names[@]}";
+    do
+        OPENAI_API_KEY="NO_API_KEY" screen -dmS bench-$i -- python gen_api_answer.py \
+            --bench-name {{bench_name}} \
+            --openai-api-base {{endpoint}} \
+            --model ${model_names[$i]} \
+            --num-choices 1
+    done
+    cd $REPO_ROOT
+
+    just wait-for-run-bench
+    echo "...Done running MT-Bench (generation) for current batch!"
+
+    echo "Killing current model..."
+    pkill screen
+    echo "...Done killing current batch of models!"
+
+
+
+run-mt-dir-parallel model_name model_dir every="1" max_checkpoints="16": && (run-mt-dir-parallel-core model_name model_dir every max_checkpoints)
     #!/usr/bin/env julia
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
+    fns = fns[1:min(length(fns),max_checkpoints)]
     println("$(length(fns)) checkpoints to process...")
 
-[confirm]
-run-mt-dir-parallel-core model_name model_dir every="1": 
+
+run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16": 
     #!/usr/bin/env -S julia -t 8
-    run(`just prepare-bench ws-mt`) # init bench venv for all
-    model_name = "{{model_name}}"
+    
+    # run(`just prepare-bench ws-mt`) # init bench venv for all
     fns = readdir("{{model_dir}}")
     fns = collect(fns[1:{{every}}:end])
-    run(`just prepare-local {{model_dir}}/$(fns[1])`) # init worker venv for all
-    Threads.@threads for fn in fns
-        m = match(r"samples_(\d+)", fn)
-        if !isnothing(m)
-            num_samples = parse(Int, m[1])
-            cuda_dev = Threads.threadid() - 1
-            cmd = `just run-mt $model_name-$num_samples {{model_dir}}/$fn 0 gpt-4 $cuda_dev`
-            @info "running" cuda_dev cmd
-            run(cmd)
-        end
+    fns = fns[1:min(length(fns),{{max_checkpoints}})]
+
+    # create soft-link
+    # Create soft-links
+    for (i, fn) in enumerate(fns)
+        target = joinpath("{{model_dir}}", fn)
+        link = joinpath("ibm", "{{model_name}}-$fn")
+        run(`ln -sf $target $link`)
     end
+
+    # # Split checkpoints into batches of up to 8
+    batches = [fns[i:i+7] for i in 1:8:length(fns)]
+    
+    for batch in batches
+        model_name_ls = join("{{model_name}}-" .* batch, ",")
+        run(`echo $model_name_ls`)
+        run(`just start-local-batch $model_name_ls`)
+        run(`just run-bench-batch $model_name_ls`)
+    end
+
 
 vllm-p2 port="8080":
     #!/usr/bin/env bash
