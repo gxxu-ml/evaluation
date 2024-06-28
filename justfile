@@ -180,6 +180,58 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
 
     python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
 
+
+
+run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
+    #!/usr/bin/env bash
+
+    IFS=',' read -r -a model_names <<< {{model_name_ls}}
+    REPO_ROOT=$(pwd)
+    WORKSPACE=$(realpath {{workspace}})
+
+    cd $WORKSPACE
+    source venv/bin/activate
+
+    cd $WORKSPACE/FastChat/fastchat/llm_judge
+
+    if [ "{{judge_model}}" == "gpt-4-turbo" ]; then
+        parallel=40
+    else
+        parallel=10
+    fi
+    
+    model_list=""
+    for i in "${!model_names[@]}";
+    do
+        model_list+="${model_names[$i]} "
+    done
+
+
+    if [ -z "$EVAL_USE_P2" ] || [ "$EVAL_USE_P2" != "0" ]; then
+        pkill screen
+
+        just vllm-p2 &
+        sleep 300
+
+        OPENAI_API_BASE=http://0.0.0.0:8080/v1 OPENAI_API_KEY=NO_API_KEY ILAB_EVAL_MERGE_SYS_USR=1 python gen_judgment.py \
+        --bench-name {{bench_name}} \
+        --model-list $model_list \
+        --judge-model {{judge_model}} \
+        --parallel $parallel \
+        --yes
+    else
+        OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
+        --bench-name {{bench_name}} \
+        --model-list $model_list \
+        --judge-model {{judge_model}} \
+        --parallel $parallel \
+        --yes
+    fi
+
+
+    python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
+
+
 run-bench-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
     echo "Running MT-Bench (generation)..."
     just run-bench {{workspace}} {{model}} {{bench_name}} {{max_worker_id}}
@@ -375,6 +427,11 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
         run(`just start-local-batch $model_name_ls`)
         run(`just run-bench-batch $model_name_ls`)
     end
+
+    full_model_name_ls = join("{{model_name}}-" .* fns, ",")
+
+    run(`just run-judge-batch ws-mt full_model_name_ls mt_bench`)
+
 
 
 vllm-p2 port="8080":
