@@ -460,7 +460,7 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
 vllm-p2 port="8080":
     #!/usr/bin/env bash
 
-    export PATH="${HOME}/.conda/envs/tgi/bin:${PATH}"
+    export PATH="${HOME}/.conda/envs/vllm/bin:${PATH}"
 
     if ! ray status > /dev/null 2>&1; then
         ray start --head --num-cpus=32 --num-gpus=8 --disable-usage-stats
