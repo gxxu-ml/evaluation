@@ -81,3 +81,12 @@ sdg (synthetic data generation) path root where dataset files are created
 # Example:
 ./scripts/run_pr_mmlu.sh /app/test/workspace-mmlu-pr/ /appt/test/results.json /new_data/model_checkpoint 1 2
 ```
+
+# Run efficient MT-Bench using GPT4 or Prometheus-2
+```
+just run-mt-dir-parallel <model-name> <model_dir> every="1" max_checkpoints="16"
+
+## <model-name> should contain granite or merlinite for correct prompt matching
+## model-dir should only contain checkpoints; it will error out if irrelevant files or directories are included
+## eval result will be printed and saved to <model-dir>
+```

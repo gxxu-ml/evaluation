@@ -166,7 +166,7 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
             --bench-name {{bench_name}} \
             --model-list $model_list \
             --judge-model {{judge_model}} \
-            --parallel $parallel \
+            --parallel 40 \
             --yes
         else
             OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
@@ -206,17 +206,16 @@ run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
         model_list+="${model_names[$i]} "
     done
 
-
     if [ -z "$EVAL_USE_P2" ] || [ "$EVAL_USE_P2" != "0" ]; then
         pkill screen
 
         just vllm-p2 &
-        sleep 300
+        sleep 180
 
         OPENAI_API_BASE=http://0.0.0.0:8080/v1 OPENAI_API_KEY=NO_API_KEY ILAB_EVAL_MERGE_SYS_USR=1 python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list $model_list \
-        --judge-model {{judge_model}} \
+        --judge-model prometheus \
         --parallel $parallel \
         --yes
     else
@@ -410,7 +409,6 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     fns = collect(fns[1:{{every}}:end])
     fns = fns[1:min(length(fns),{{max_checkpoints}})]
 
-    # create soft-link
     # Create soft-links
     for (i, fn) in enumerate(fns)
         target = joinpath("{{model_dir}}", fn)
@@ -429,8 +427,9 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     end
 
     full_model_name_ls = join("{{model_name}}-" .* fns, ",")
-
-    run(`just run-judge-batch ws-mt full_model_name_ls mt_bench`)
+    # run(`echo $full_model_name_ls`)
+    run(`just run-judge-batch ws-mt $full_model_name_ls mt_bench`)
+    run(`cp -r ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_dir}}`)
 
 
 
