@@ -433,7 +433,7 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     println("$(length(fns)) checkpoints to process...")
 
     # Create soft-links
-    mkdir -p ibm
+    run(`mkdir -p ibm`)
     for (i, fn) in enumerate(fns)
         target = joinpath("{{model_dir}}", fn)
         link = joinpath("ibm", "{{model_name}}-$fn")
