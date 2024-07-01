@@ -218,6 +218,8 @@ run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
         --judge-model prometheus \
         --parallel $parallel \
         --yes
+
+        python show_result.py --bench-name {{bench_name}} --judge-model prometheus
     else
         OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
@@ -225,10 +227,12 @@ run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
         --judge-model {{judge_model}} \
         --parallel $parallel \
         --yes
+
+        python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
     fi
 
 
-    python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
+    
 
 
 run-bench-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
@@ -396,9 +400,6 @@ run-bench-batch model_name_ls workspace="ws-mt" bench_name="mt_bench" endpoint="
 run-mt-dir-parallel model_name model_dir every="1" max_checkpoints="16": && (run-mt-dir-parallel-core model_name model_dir every max_checkpoints)
     #!/usr/bin/env julia
     fns = readdir("{{model_dir}}")
-    fns = collect(fns[1:{{every}}:end])
-    fns = fns[1:min(length(fns),max_checkpoints)]
-    println("$(length(fns)) checkpoints to process...")
 
 
 run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16": 
@@ -406,8 +407,30 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     
     # run(`just prepare-bench ws-mt`) # init bench venv for all
     fns = readdir("{{model_dir}}")
+
+    # Function to extract numeric suffix safely
+    function extract_suffix(folder)
+        parts = split(folder, "_")
+        if length(parts) == 2 && all(isdigit, parts[2])
+            return parse(Int, parts[2]), folder
+        else
+            return nothing
+        end
+    end
+
+    # Extract the numeric suffixes and pair them with the original folder names, skipping invalid ones
+    paired = filter(!isnothing, [extract_suffix(folder) for folder in fns])
+
+    # Sort the pairs based on the numeric suffix
+    sorted_paired = sort(paired)
+    
+    # Extract the sorted folder names
+    fns = [pair[2] for pair in sorted_paired]
+
     fns = collect(fns[1:{{every}}:end])
     fns = fns[1:min(length(fns),{{max_checkpoints}})]
+
+    println("$(length(fns)) checkpoints to process...")
 
     # Create soft-links
     for (i, fn) in enumerate(fns)
@@ -427,7 +450,7 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     end
 
     full_model_name_ls = join("{{model_name}}-" .* fns, ",")
-    # run(`echo $full_model_name_ls`)
+
     run(`just run-judge-batch ws-mt $full_model_name_ls mt_bench`)
     run(`cp -r ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_dir}}`)
 
@@ -444,12 +467,29 @@ vllm-p2 port="8080":
         echo "Ray server is already running..."
     fi
 
-    python -m vllm.entrypoints.openai.api_server \
-        --port {{port}} \
-        --model prometheus-eval/prometheus-8x7b-v2.0 \
-        --dtype float16 \
-        --tensor-parallel-size 8 \
-        --served-model-name gpt-4
+    check_success() {
+        local file=$1
+        local message="Started server process"
+        if [ ! -f "$file" ]; then
+            echo "Log file $file does not exist."
+            return 1
+        fi
+        # Tail the log file and grep for success message, exit when found
+        tail -f "$file" | grep -q "$message"
+        echo "Server at $file has started successfully."
+        return 0
+    }
+    # if returns 1, then it failed
+    if ! check_success vllm_server.log; then
+        python -m vllm.entrypoints.openai.api_server \
+            --port {{port}} \
+            --model prometheus-eval/prometheus-8x7b-v2.0 \
+            --dtype float16 \
+            --tensor-parallel-size 8 \
+            --served-model-name prometheus > vllm_server.log &
+    else
+        echo "Server already started."
+    fi
 
 ###
 
