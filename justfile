@@ -182,7 +182,7 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
 
 
 
-run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
+run-judge-batch workspace model_name_ls bench_name:
     #!/usr/bin/env bash
 
     IFS=',' read -r -a model_names <<< {{model_name_ls}}
@@ -193,12 +193,6 @@ run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
     source venv/bin/activate
 
     cd $WORKSPACE/FastChat/fastchat/llm_judge
-
-    if [ "{{judge_model}}" == "gpt-4-turbo" ]; then
-        parallel=40
-    else
-        parallel=10
-    fi
     
     model_list=""
     for i in "${!model_names[@]}";
@@ -216,19 +210,23 @@ run-judge-batch workspace model_name_ls bench_name judge_model="gpt-4":
         --bench-name {{bench_name}} \
         --model-list $model_list \
         --judge-model prometheus \
-        --parallel $parallel \
+        --parallel 40 \
         --yes
 
         python show_result.py --bench-name {{bench_name}} --judge-model prometheus
     else
+        # default to GPT4 if P2 not used.
+        export EVAL_USE_GPT4="1"
+    fi
+    
+    if [ -z "$EVAL_USE_GPT4" ] || [ "$EVAL_USE_GPT4" != "0" ]; then
         OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
         --bench-name {{bench_name}} \
         --model-list $model_list \
-        --judge-model {{judge_model}} \
-        --parallel $parallel \
+        --judge-model gpt-4 \
+        --parallel 20 \
         --yes
-
-        python show_result.py --bench-name {{bench_name}} --judge-model {{judge_model}}
+        python show_result.py --bench-name {{bench_name}} --judge-model gpt-4
     fi
 
 
