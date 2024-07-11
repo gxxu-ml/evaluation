@@ -409,8 +409,13 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     # Function to extract numeric suffix safely
     function extract_suffix(folder)
         parts = split(folder, "_")
-        if length(parts) == 2 && all(isdigit, parts[2])
+        parts2 = split(folder, "-")
+        # for samples_1234
+        if length(parts) == 2 && parts[1] == "samples" && all(isdigit, parts[2])
             return parse(Int, parts[2]), folder
+        # for checkpoint-1234
+        elseif length(parts2) == 2 && parts2[1] == "checkpoint" && all(isdigit, parts2[2])
+            return parse(Int, parts2[2]), folder
         else
             return nothing
         end
@@ -439,7 +444,7 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
     end
 
     # # Split checkpoints into batches of up to 8
-    batches = [fns[i:i+7] for i in 1:8:length(fns)]
+    batches = [fns[i:min(i+8-1, length(fns))] for i in 1:8:length(fns)]
     
     for batch in batches
         model_name_ls = join("{{model_name}}-" .* batch, ",")
