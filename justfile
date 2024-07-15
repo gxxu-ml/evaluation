@@ -382,7 +382,7 @@ run-bench-batch model_name_ls workspace="ws-mt" bench_name="mt_bench" endpoint="
             --bench-name {{bench_name}} \
             --openai-api-base {{endpoint}} \
             --model ${model_names[$i]} \
-            --num-choices 1
+            --num-choices 1 | tee $WORKSPACE/FastChat/fastchat/llm_judge/data/mt_bench/${model_names[$i]}.log
     done
     cd $REPO_ROOT
 
