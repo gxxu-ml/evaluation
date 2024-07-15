@@ -225,7 +225,7 @@ run-judge-batch workspace model_name_ls bench_name:
         --model-list $model_list \
         --judge-model gpt-4 \
         --parallel 20 \
-        --yes
+        --yes | tee mtbench.log
         python show_result.py --bench-name {{bench_name}} --judge-model gpt-4
     fi
 
