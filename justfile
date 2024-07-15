@@ -211,7 +211,7 @@ run-judge-batch workspace model_name_ls bench_name:
         --model-list $model_list \
         --judge-model prometheus \
         --parallel 40 \
-        --yes
+        --yes | tee mtbench.log
 
         python show_result.py --bench-name {{bench_name}} --judge-model prometheus
     else
