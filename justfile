@@ -34,6 +34,10 @@ prepare-local model_path:
         else
             git switch main
         fi
+        # switch to main if llama-3 in model_path
+        if [[ "{{model_path}}" == *llama-3* ]]; then
+            git switch main
+        fi
         pip install --quiet -e ".[model_worker]"
         pip install wandb matplotlib pandas pygithub ibmcloudant tenacity # for analysis.py
     fi
@@ -334,7 +338,7 @@ start-local-batch model_name_ls:
 
     IFS=',' read -r -a model_names <<< {{model_name_ls}}
     
-    just prepare-local "ibm/${model_names[$i]}"
+    just prepare-local "ibm/${model_names[0]}"
     source venv/bin/activate
 
     cd $REPO_ROOT
