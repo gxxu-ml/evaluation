@@ -31,6 +31,8 @@ prepare-local model_path:
         if [[ "{{model_path}}" == ibm/* ]] || [[ "{{model_path}}" =~ (merlinite|granite) ]]; then
             git switch ilab
             pip install git+https://${GH_IBM_TOKEN}@github.ibm.com/ai-models-architectures/IBM-models.git@0.1.1
+            pip install instructlab-dolomite
+
         else
             git switch main
         fi
