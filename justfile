@@ -176,7 +176,7 @@ run-judge workspace model bench_name max_worker_id="4" judge_model="gpt-4":
             --bench-name {{bench_name}} \
             --model-list $model_list \
             --judge-model {{judge_model}} \
-            --parallel 40 \
+            --parallel $parallel \
             --yes
         else
             OPENAI_API_KEY=${OPENAI_API_KEY} python gen_judgment.py \
