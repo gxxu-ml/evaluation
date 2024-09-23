@@ -44,6 +44,11 @@ prepare-local model_path:
         if [[ "{{model_path}}" == *sw-mistral* ]]; then
             git switch main
         fi
+        # switch to main if mistral in model_path
+        if [[ "{{model_path}}" == *g8b* ]]; then
+            git switch main
+            pip install git+https://github.com/huggingface/transformers
+        fi
         pip install --quiet -e ".[model_worker]"
         pip install wandb matplotlib pandas pygithub ibmcloudant tenacity # for analysis.py
     fi
