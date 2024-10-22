@@ -463,19 +463,22 @@ run-mt-dir-parallel-core model_name model_dir every="1" max_checkpoints="16":
         run(`ln -sf $target $link`)
     end
 
-    # # Split checkpoints into batches of up to 8
-    batches = [fns[i:min(i+8-1, length(fns))] for i in 1:8:length(fns)]
-    
-    for batch in batches
-        model_name_ls = join("{{model_name}}-" .* batch, ",")
-        run(`echo $model_name_ls`)
-        run(`just start-local-batch $model_name_ls`)
-        run(`just run-bench-batch $model_name_ls`)
-    end
+    for i in range(5):
 
-    full_model_name_ls = join("{{model_name}}-" .* fns, ",")
+        # # Split checkpoints into batches of up to 8
+        batches = [fns[i:min(i+8-1, length(fns))] for i in 1:8:length(fns)]
+        
+        for batch in batches
+            model_name_ls = join("{{model_name}}-" .* batch, ",")
+            run(`echo $model_name_ls`)
+            run(`just start-local-batch $model_name_ls`)
+            run(`just run-bench-batch $model_name_ls`)
+        end
 
-    run(`just run-judge-batch ws-mt $full_model_name_ls mt_bench`)
+        full_model_name_ls = join("{{model_name}}-" .* fns, ",")
+
+        run(`just run-judge-batch ws-mt $full_model_name_ls mt_bench`)
+
     run(`cp -r ws-mt/FastChat/fastchat/llm_judge/data/mt_bench {{model_dir}}`)
 
 
