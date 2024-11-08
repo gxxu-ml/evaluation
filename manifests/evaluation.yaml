@@ -1,0 +1,98 @@
+# Source: generator/templates/pytorch-job.yaml
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+    name: job-name 
+    namespace: granite
+spec:
+    pytorchReplicaSpecs:
+        Master:
+            replicas: 1
+            restartPolicy: Never
+            template:
+                metadata:
+                    annotations:
+                        k8s.v1.cni.cncf.io/networks: multi-nic-network
+                spec:
+                    containers:
+                        - name: pytorch
+                          image: docker.io/xuk92/deepspeed-dev:v0.13.1
+                          imagePullPolicy: IfNotPresent
+                          env:
+                              - name: CUDA_VISIBLE_DEVICES
+                                value: "0,1,2,3,4,5,6,7"
+                              - name: GH_TOKEN
+                                value: "gh-token"
+                              - name: IBM_GH_TOKEN
+                                value: "ibm-gh-token"
+                              - name: OPENAI_API_KEY
+                                value: "openai-api-key"
+                              - name: WANDB_API_KEY
+                                value: "wandb-api-key"
+                              - name: CLOUDANT_URL
+                                value: "cloudant-url"
+                              - name: CLOUDANT_APIKEY
+                                value: "cloudant-apikey"
+                              - name: NUM_SHOT
+                                value: "num_shot"
+                              - name: BATCH_SIZE
+                                value: "batch_size"
+                              - name: SDG_PATH
+                                value: "sdg_path"
+                          command:
+                              - sh
+                              - -c
+                              - |
+                                cd /root
+                                git clone https://$GH_TOKEN@github.com/instruct-lab/evaluation.git
+                                cd evaluation/
+                                mkdir results
+                                curl -LO https://github.com/casey/just/releases/download/1.25.0/just-1.25.0-x86_64-unknown-linux-musl.tar.gz
+                                tar -xzf just-1.25.0-x86_64-unknown-linux-musl.tar.gz --no-same-owner
+                                ./just run_all rc-branch-name rc-model-path
+                                chmod +x ./scripts/prepare_pr_mmlu.sh
+                                chmod +x ./scripts/run_pr_mmlu.sh
+                                ./scripts/prepare_pr_mmlu.sh $HOME/evaluation/ws-mmlu-pr $SDG_PATH
+                                ./scripts/run_pr_mmlu.sh ws-mmlu-pr $HOME/evaluation/ws-mmlu-pr/base_model_results.json ibm/merlinite-7b $NUM_SHOT $BATCH_SIZE # TODO: this should be ibm/merlinite-7b
+                                ./scripts/run_pr_mmlu.sh ws-mmlu-pr $HOME/evaluation/ws-mmlu-pr/rc_model_results.json $HOME/evaluation/ibm/merlinite-7b-rc $NUM_SHOT $BATCH_SIZE
+                                ./venv/bin/python scripts/analysis.py --taxonomy-dir $HOME/evaluation/ws-pr/taxonomy --eval-branch rc-branch-name --output-dir $HOME/evaluation/results
+                                mkdir -p /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp -r $HOME/evaluation/ws-mt/FastChat/fastchat/llm_judge/data/mt_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
+                                cp -r $HOME/evaluation/ws-pr/FastChat/fastchat/llm_judge/data/pr_bench /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
+                                cp $HOME/evaluation/ws-mmlu-pr/base_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp $HOME/evaluation/ws-mmlu-pr/rc_model_results.json /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name/pr_mmlu
+                                cp -r $HOME/evaluation/results /instruct_lab/evaluation_results/merlinite-7b/rc-branch-name
+                          resources:
+                              limits:
+                                  cpu: 72
+                                  nvidia.com/gpu: 8
+                                  memory: 1150Gi
+                                  nvidia.com/roce_gdr: 2
+                          securityContext:
+                              capabilities:
+                                  add:
+                                    - IPC_LOCK
+                          volumeMounts:
+                              - name: scratch1
+                                mountPath: /new_data
+                              - name: scratch2
+                                mountPath: /inter-ckpts
+                              - name: scratch3
+                                mountPath: /instruct_lab
+                              - name: dshm
+                                mountPath: "/dev/shm"
+                    volumes:
+                        - name: scratch1
+                          persistentVolumeClaim:
+                              claimName: llm-alignment
+                        - name: scratch2
+                          persistentVolumeClaim:
+                              claimName: inter-ckpts
+                        - name: scratch3
+                          persistentVolumeClaim:
+                              claimName: instruct-lab
+                        - name: dshm
+                          emptyDir:
+                              medium: Memory
+                    imagePullSecrets:
+                        - name: all-icr-io

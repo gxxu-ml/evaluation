@@ -55,3 +55,6 @@ venv.bak/
 
 # Tox envs
 .tox
+
+# Development
+tmp
